@@ -9,6 +9,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+const (
+	authPath   = "auth"
+	loginPath  = "login"
+	logoutPath = "logout"
+)
+
 func AddRoutes(prefix string, engine *gin.Engine) {
 	// User Group
 	g1 := engine.Group(prefix)
@@ -74,6 +80,12 @@ func AddRoutes(prefix string, engine *gin.Engine) {
 		game.GetFiltered(gtype.All),
 		game.JSONIndexAction,
 	)
+
+	g1.GET(loginPath, user.Login("/"+prefix+"/"+authPath))
+
+	g1.GET(logoutPath, user.Logout)
+
+	g1.GET(authPath, user.Auth("/"+prefix+"/"+authPath))
 
 	// Users group
 	g2 := engine.Group(prefix + "s")
