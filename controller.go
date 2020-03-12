@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"cloud.google.com/go/datastore"
@@ -15,13 +16,14 @@ import (
 	"github.com/SlothNinja/user"
 	name "github.com/SlothNinja/user-name"
 	stats "github.com/SlothNinja/user-stats"
+	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"google.golang.org/appengine"
 )
 
 const (
 	welcomePath = "/welcome"
-	userNewPath = "/user"
+	userNewPath = "/user/new"
 	homePath    = "/"
 )
 
@@ -153,6 +155,24 @@ func JSON(c *gin.Context) {
 }
 
 func NewAction(c *gin.Context) {
+	cu := user.CurrentFrom(c)
+	if cu != nil {
+		log.Warningf("user %#v present, no need for new one", cu)
+		c.Redirect(http.StatusSeeOther, homePath)
+		return
+	}
+
+	session := sessions.Default(c)
+	token, ok := user.SessionTokenFrom(session)
+	if !ok {
+		log.Warningf("missing token")
+		c.Redirect(http.StatusSeeOther, homePath)
+		return
+	}
+
+	u := user.New(c, token.ID())
+	u.Data = token.User.Data
+
 	// u := user.New(c, 0)
 	// gu := user.GUserFrom(c)
 	// if gu == nil {
@@ -167,12 +187,18 @@ func NewAction(c *gin.Context) {
 
 	c.HTML(http.StatusOK, "user/new", gin.H{
 		"Context": c,
-		//	"User":    user.FromGUser(c, user.GUserFrom(c)),
+		"User":    u,
 	})
 }
 
 func Create(prefix string) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		cu := user.CurrentFrom(c)
+		if cu != nil {
+			log.Warningf("user %#v present, no need for new one", cu)
+			c.Redirect(http.StatusSeeOther, homePath)
+			return
+		}
 		// u := user.FromGUser(c, user.GUserFrom(c))
 		// switch existing, err := user.ByGoogleID(c, u.GoogleID); {
 		// case err == user.ErrNotFound:
@@ -190,37 +216,83 @@ func Create(prefix string) gin.HandlerFunc {
 		// 	return
 		// }
 
-		// // Fell through 'switch' thus err == user.ErrNotFound
-		// u.Name = strings.Split(c.PostForm("user-name"), "@")[0]
-		// u.LCName = strings.ToLower(u.Name)
-		// //u.Key = user.NewKey(c, 0)
+		session := sessions.Default(c)
+		token, ok := user.SessionTokenFrom(session)
+		if !ok {
+			log.Warningf("missing token")
+			c.Redirect(http.StatusSeeOther, homePath)
+			return
+		}
 
-		// n := name.New()
-		// if !name.IsUnique(c, u.LCName) {
-		// 	restful.AddErrorf(c, "%q is not a unique user name.", u.LCName)
-		// 	c.Redirect(http.StatusSeeOther, userNewPath)
-		// 	return
-		// }
+		// // Fell through 'switch' thus err == user.ErrNotFound
+		u := user.New(c, 0)
+		u.Name = strings.Split(c.PostForm("user-name"), "@")[0]
+		u.LCName = strings.ToLower(u.Name)
+		// //u.Key = user.NewKey(c, 0)
+		u.Email = token.Email
+
+		uniq, err := user.NameIsUnique(c, u.Name)
+		if err != nil {
+			log.Errorf(err.Error())
+			c.Redirect(http.StatusSeeOther, homePath)
+			return
+		}
+
+		if !uniq {
+			// n := name.New()
+			// if !name.IsUnique(c, u.LCName) {
+			err = fmt.Errorf("%q is not a unique user name.", u.LCName)
+			restful.AddErrorf(c, err.Error())
+			log.Warningf(err.Error())
+			c.Redirect(http.StatusSeeOther, userNewPath)
+			return
+		}
 
 		// n.GoogleID = u.GoogleID
 		// n.ID = u.LCName
 
-		// err := datastore.RunInTransaction(c, func(tc context.Context) (terr error) {
-		// 	entities := []interface{}{u, n}
-		// 	if terr = datastore.Put(tc, entities); terr != nil {
-		// 		return
-		// 	}
-		// 	nu := user.ToNUser(c, u)
-		// 	return datastore.Put(tc, nu)
-		// }, &datastore.TransactionOptions{XG: true})
+		dsClient, err := datastore.NewClient(c, "")
+		if err != nil {
+			log.Errorf(err.Error())
+			c.Redirect(http.StatusSeeOther, homePath)
+			return
+		}
 
-		// if err != nil {
-		// 	log.Errorf("User/Controller#Create datastore.RunInTransaction Error: %v", err)
-		// 	c.Redirect(http.StatusSeeOther, homePath)
-		// 	return
-		// }
+		ks, err := dsClient.AllocateIDs(c, []*datastore.Key{u.Key})
+		if err != nil {
+			log.Errorf(err.Error())
+			c.Redirect(http.StatusSeeOther, homePath)
+			return
+		}
 
-		// c.Redirect(http.StatusSeeOther, showPath(prefix, u.ID))
+		u.Key = ks[0]
+
+		oaid := user.GenOAuthID(token.Sub)
+		oa := user.NewOAuth(oaid)
+		oa.ID = u.ID()
+		oa.UpdatedAt = time.Now()
+		_, err = dsClient.RunInTransaction(c, func(tx *datastore.Transaction) error {
+			ks := []*datastore.Key{oa.Key, u.Key}
+			es := []interface{}{&oa, u}
+			_, err := tx.PutMulti(ks, es)
+			return err
+
+		})
+
+		if err != nil {
+			log.Errorf(err.Error())
+			c.Redirect(http.StatusSeeOther, homePath)
+			return
+		}
+		token.User = u
+		token.Loaded = true
+		err = token.SaveTo(session)
+		if err != nil {
+			log.Errorf(err.Error())
+			c.Redirect(http.StatusSeeOther, homePath)
+			return
+		}
+		c.Redirect(http.StatusSeeOther, showPath(prefix, u.ID()))
 	}
 }
 
