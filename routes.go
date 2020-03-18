@@ -81,6 +81,11 @@ func AddRoutes(prefix string, engine *gin.Engine) {
 		game.JSONIndexAction,
 	)
 
+	g1.GET("as/:uid",
+		user.RequireAdmin,
+		user.As,
+	)
+
 	g1.GET(loginPath, user.Login("/"+prefix+"/"+authPath))
 
 	g1.GET(logoutPath, user.Logout)
