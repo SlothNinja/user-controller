@@ -18,7 +18,6 @@ import (
 	stats "github.com/SlothNinja/user-stats"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
-	"google.golang.org/appengine"
 )
 
 const (
@@ -27,19 +26,19 @@ const (
 	homePath    = "/"
 )
 
-func Index(c *gin.Context) {
+func (svr server) index(c *gin.Context) {
 	c.HTML(http.StatusOK, "user/index", gin.H{
 		"Context":   c,
-		"VersionID": appengine.VersionID(c),
+		"VersionID": sn.VersionID(),
 		"CUser":     user.CurrentFrom(c),
 	})
 }
 
-func Show(c *gin.Context) {
+func (svr server) show(c *gin.Context) {
 	u := user.From(c)
 	c.HTML(http.StatusOK, "user/show", gin.H{
 		"Context":   c,
-		"VersionID": appengine.VersionID(c),
+		"VersionID": sn.VersionID(),
 		"User":      u,
 		"CUser":     user.CurrentFrom(c),
 		"IsAdmin":   user.IsAdmin(c),
@@ -47,25 +46,17 @@ func Show(c *gin.Context) {
 	})
 }
 
-func Edit(c *gin.Context) {
+func (svr server) edit(c *gin.Context) {
 	u := user.From(c)
 	c.HTML(http.StatusOK, "user/edit", gin.H{
 		"Context":   c,
-		"VersionID": appengine.VersionID(c),
+		"VersionID": sn.VersionID(),
 		"User":      u,
 		"CUser":     user.CurrentFrom(c),
 		"IsAdmin":   user.IsAdmin(c),
 		"Stats":     stats.Fetched(c),
 	})
 }
-
-//func Remote(ctx *restful.Context, render render.Render, params martini.Params) {
-//	if u, err := user.ByGoogleID(ctx, params["uid"]); err == nil {
-//		render.JSON(http.StatusOK, u)
-//	} else {
-//		render.HTML(http.StatusGone, "", "")
-//	}
-//}
 
 type jUserIndex struct {
 	Data            []*jUser `json:"data"`
@@ -145,7 +136,7 @@ func toUserTable(c *gin.Context, us []interface{}) (table *jUserIndex, err error
 	return
 }
 
-func JSON(c *gin.Context) {
+func (svr server) json(c *gin.Context) {
 	us := user.UsersFrom(c)
 	if data, err := toUserTable(c, us); err != nil {
 		c.JSON(http.StatusInternalServerError, fmt.Sprintf("%v", err))
@@ -154,7 +145,7 @@ func JSON(c *gin.Context) {
 	}
 }
 
-func NewAction(c *gin.Context) {
+func (svr server) new(c *gin.Context) {
 	cu := user.CurrentFrom(c)
 	if cu != nil {
 		log.Warningf("user %#v present, no need for new one", cu)
@@ -173,25 +164,13 @@ func NewAction(c *gin.Context) {
 	u := user.New(c, token.ID())
 	u.Data = token.User.Data
 
-	// u := user.New(c, 0)
-	// gu := user.GUserFrom(c)
-	// if gu == nil {
-	// 	restful.AddErrorf(c, "You must be logged in to access this page.")
-	// 	c.Redirect(http.StatusSeeOther, welcomePath)
-	// 	return
-	// }
-
-	// u.Name = strings.Split(gu.Email, "@")[0]
-	// u.LCName = strings.ToLower(u.Name)
-	// u.Email = gu.Email
-
 	c.HTML(http.StatusOK, "user/new", gin.H{
 		"Context": c,
 		"User":    u,
 	})
 }
 
-func Create(prefix string) gin.HandlerFunc {
+func (svr server) create(prefix string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		cu := user.CurrentFrom(c)
 		if cu != nil {
@@ -199,22 +178,6 @@ func Create(prefix string) gin.HandlerFunc {
 			c.Redirect(http.StatusSeeOther, homePath)
 			return
 		}
-		// u := user.FromGUser(c, user.GUserFrom(c))
-		// switch existing, err := user.ByGoogleID(c, u.GoogleID); {
-		// case err == user.ErrNotFound:
-		// case err != nil:
-		// 	restful.AddErrorf(c, err.Error())
-		// 	c.Redirect(http.StatusSeeOther, userNewPath)
-		// 	return
-		// case existing != nil:
-		// 	restful.AddErrorf(c, "You already have an account.")
-		// 	c.Redirect(http.StatusSeeOther, homePath)
-		// 	return
-		// default:
-		// 	log.Errorf("Unexpected result for user.Create. err: %v existing: %v", err, existing)
-		// 	c.Redirect(http.StatusSeeOther, userNewPath)
-		// 	return
-		// }
 
 		session := sessions.Default(c)
 		token, ok := user.SessionTokenFrom(session)
@@ -228,7 +191,6 @@ func Create(prefix string) gin.HandlerFunc {
 		u := user.New(c, 0)
 		u.Name = strings.Split(c.PostForm("user-name"), "@")[0]
 		u.LCName = strings.ToLower(u.Name)
-		// //u.Key = user.NewKey(c, 0)
 		u.Email = token.Email
 
 		uniq, err := user.NameIsUnique(c, u.Name)
@@ -239,8 +201,6 @@ func Create(prefix string) gin.HandlerFunc {
 		}
 
 		if !uniq {
-			// n := name.New()
-			// if !name.IsUnique(c, u.LCName) {
 			err = fmt.Errorf("%q is not a unique user name.", u.LCName)
 			restful.AddErrorf(c, err.Error())
 			log.Warningf(err.Error())
@@ -248,17 +208,7 @@ func Create(prefix string) gin.HandlerFunc {
 			return
 		}
 
-		// n.GoogleID = u.GoogleID
-		// n.ID = u.LCName
-
-		dsClient, err := datastore.NewClient(c, "")
-		if err != nil {
-			log.Errorf(err.Error())
-			c.Redirect(http.StatusSeeOther, homePath)
-			return
-		}
-
-		ks, err := dsClient.AllocateIDs(c, []*datastore.Key{u.Key})
+		ks, err := svr.AllocateIDs(c, []*datastore.Key{u.Key})
 		if err != nil {
 			log.Errorf(err.Error())
 			c.Redirect(http.StatusSeeOther, homePath)
@@ -271,7 +221,7 @@ func Create(prefix string) gin.HandlerFunc {
 		oa := user.NewOAuth(oaid)
 		oa.ID = u.ID()
 		oa.UpdatedAt = time.Now()
-		_, err = dsClient.RunInTransaction(c, func(tx *datastore.Transaction) error {
+		_, err = svr.RunInTransaction(c, func(tx *datastore.Transaction) error {
 			ks := []*datastore.Key{oa.Key, u.Key}
 			es := []interface{}{&oa, u}
 			_, err := tx.PutMulti(ks, es)
@@ -300,32 +250,9 @@ func showPath(prefix string, id int64) string {
 	return fmt.Sprintf("%s/show/%d", prefix, id)
 }
 
-//func SendTestMessage(c *restful.Context, render render.Render, routes martini.Routes, params martini.Params) {
-//	u := user.Fetched(c)
-//	m := new(xmpp.Message)
-//	m.To = []string{u.Email}
-//	m.Body = fmt.Sprintf("Test message from SlothNinja Games for %s", u.Name)
-//	send.XMPP(c, m)
-//	ctx.AddNoticef("Test IM sent to %s", u.Name)
-//	render.Redirect(routes.URLFor("user_show", params["uid"]), http.StatusSeeOther)
-//}
-//
-//func SendIMInvite(ctx *restful.Context, render render.Render, routes martini.Routes, params martini.Params) {
-//	u := user.Fetched(ctx)
-//	send.Invite(ctx, u.Email)
-//	ctx.AddNoticef("IM Invite sent to %s", u.Name)
-//	render.Redirect(routes.URLFor("user_show", params["uid"]), http.StatusSeeOther)
-//}
-func Update(c *gin.Context) {
+func (svr server) update(c *gin.Context) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
-
-	dsClient, err := datastore.NewClient(c, "")
-	if err != nil {
-		log.Errorf(err.Error())
-		c.Abort()
-		return
-	}
 
 	// Get Resource
 	uid, err := strconv.ParseInt(c.Param("uid"), 10, 64)
@@ -334,9 +261,9 @@ func Update(c *gin.Context) {
 		c.Abort()
 		return
 	}
-	u := user.New(c, uid)
 
-	err = dsClient.Get(c, u.Key, u)
+	u := user.New(c, uid)
+	err = svr.Get(c, u.Key, u)
 	if err != nil {
 		log.Errorf("User/Controller#Update user.BySID Error: %s", err)
 		c.Abort()
@@ -355,7 +282,7 @@ func Update(c *gin.Context) {
 	newName.GoogleID = u.GoogleID
 
 	log.Debugf("Before datastore.RunInTransaction")
-	_, err = dsClient.RunInTransaction(c, func(tx *datastore.Transaction) error {
+	_, err = svr.RunInTransaction(c, func(tx *datastore.Transaction) error {
 		nu := user.ToNUser(c, u)
 		entities := []interface{}{u, nu, newName, oldName}
 		ks := []*datastore.Key{u.Key, nu.Key, newName.Key, oldName.Key}
@@ -380,13 +307,14 @@ func Update(c *gin.Context) {
 	c.Redirect(http.StatusSeeOther, route)
 }
 
-func GamesIndex(c *gin.Context) {
+func (svr server) gamesIndex(c *gin.Context) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	if status := game.StatusFrom(c); status != game.NoStatus {
+	status := game.StatusFrom(c)
+	if status != game.NoStatus {
 		c.HTML(200, "shared/games_index", gin.H{})
-	} else {
-		c.HTML(200, "user/games_index", gin.H{})
+		return
 	}
+	c.HTML(200, "user/games_index", gin.H{})
 }

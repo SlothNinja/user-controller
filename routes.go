@@ -1,6 +1,7 @@
 package user_controller
 
 import (
+	"cloud.google.com/go/datastore"
 	"github.com/SlothNinja/game"
 	"github.com/SlothNinja/rating"
 	gtype "github.com/SlothNinja/type"
@@ -15,19 +16,25 @@ const (
 	logoutPath = "logout"
 )
 
-func AddRoutes(prefix string, engine *gin.Engine) {
+type server struct {
+	*datastore.Client
+}
+
+func NewClient(dsClient *datastore.Client) server {
+	return server{Client: dsClient}
+}
+
+func (svr server) AddRoutes(prefix string, engine *gin.Engine) *gin.Engine {
 	// User Group
 	g1 := engine.Group(prefix)
 	g1.GET("/new",
-		// user.RequireLogin(),
 		gtype.SetTypes(),
-		NewAction,
+		svr.new,
 	)
 
 	// Create
 	g1.POST("",
-		// user.RequireLogin(),
-		Create(prefix),
+		svr.create(prefix),
 	)
 
 	// Show User
@@ -35,24 +42,22 @@ func AddRoutes(prefix string, engine *gin.Engine) {
 		user.Fetch,
 		stats.Fetch(user.From),
 		gtype.SetTypes(),
-		Show,
+		svr.show,
 	)
 
 	// Edit User
 	g1.GET("edit/:uid",
-		// user.RequireLogin(),
 		user.Fetch,
 		stats.Fetch(user.From),
 		gtype.SetTypes(),
-		Edit,
+		svr.edit,
 	)
 
 	// Update User
 	g1.POST("update/:uid",
-		// user.RequireLogin(),
 		user.Fetch,
 		gtype.SetTypes(),
-		Update,
+		svr.update,
 	)
 
 	// User Ratings
@@ -62,7 +67,6 @@ func AddRoutes(prefix string, engine *gin.Engine) {
 	)
 
 	g1.POST("edit/:uid/ratings/json",
-		// user.RequireLogin(),
 		user.Fetch,
 		rating.JSONIndexAction,
 	)
@@ -75,7 +79,6 @@ func AddRoutes(prefix string, engine *gin.Engine) {
 	)
 
 	g1.POST("edit/:uid/games/json",
-		// user.RequireLogin(),
 		gtype.SetTypes(),
 		game.GetFiltered(gtype.All),
 		game.JSONIndexAction,
@@ -99,7 +102,7 @@ func AddRoutes(prefix string, engine *gin.Engine) {
 	g2.GET("",
 		user.RequireAdmin,
 		gtype.SetTypes(),
-		Index,
+		svr.index,
 	)
 
 	// json data for Index
@@ -107,6 +110,8 @@ func AddRoutes(prefix string, engine *gin.Engine) {
 		user.RequireAdmin,
 		gtype.SetTypes(),
 		user.FetchAll,
-		JSON,
+		svr.json,
 	)
+
+	return engine
 }
