@@ -16,25 +16,31 @@ const (
 	logoutPath = "logout"
 )
 
-type server struct {
+type Client struct {
 	*datastore.Client
+	Game   game.Client
+	Rating rating.Client
 }
 
-func NewClient(dsClient *datastore.Client) server {
-	return server{Client: dsClient}
+func NewClient(dsClient *datastore.Client) Client {
+	return Client{
+		Client: dsClient,
+		Game:   game.NewClient(dsClient),
+		Rating: rating.NewClient(dsClient),
+	}
 }
 
-func (svr server) AddRoutes(prefix string, engine *gin.Engine) *gin.Engine {
+func (client Client) AddRoutes(prefix string, engine *gin.Engine) *gin.Engine {
 	// User Group
 	g1 := engine.Group(prefix)
 	g1.GET("/new",
 		gtype.SetTypes(),
-		svr.new,
+		client.new,
 	)
 
 	// Create
 	g1.POST("",
-		svr.create(prefix),
+		client.create(prefix),
 	)
 
 	// Show User
@@ -42,7 +48,7 @@ func (svr server) AddRoutes(prefix string, engine *gin.Engine) *gin.Engine {
 		user.Fetch,
 		stats.Fetch(user.From),
 		gtype.SetTypes(),
-		svr.show,
+		client.show,
 	)
 
 	// Edit User
@@ -50,38 +56,38 @@ func (svr server) AddRoutes(prefix string, engine *gin.Engine) *gin.Engine {
 		user.Fetch,
 		stats.Fetch(user.From),
 		gtype.SetTypes(),
-		svr.edit,
+		client.edit,
 	)
 
 	// Update User
 	g1.POST("update/:uid",
 		user.Fetch,
 		gtype.SetTypes(),
-		svr.update,
+		client.update,
 	)
 
 	// User Ratings
 	g1.POST("show/:uid/ratings/json",
 		user.Fetch,
-		rating.JSONIndexAction,
+		client.Rating.JSONIndexAction,
 	)
 
 	g1.POST("edit/:uid/ratings/json",
 		user.Fetch,
-		rating.JSONIndexAction,
+		client.Rating.JSONIndexAction,
 	)
 
 	// User Games
 	g1.POST("show/:uid/games/json",
 		gtype.SetTypes(),
-		game.GetFiltered(gtype.All),
-		game.JSONIndexAction,
+		client.Game.GetFiltered(gtype.All),
+		client.Game.JSONIndexAction,
 	)
 
 	g1.POST("edit/:uid/games/json",
 		gtype.SetTypes(),
-		game.GetFiltered(gtype.All),
-		game.JSONIndexAction,
+		client.Game.GetFiltered(gtype.All),
+		client.Game.JSONIndexAction,
 	)
 
 	g1.GET("as/:uid",
@@ -102,7 +108,7 @@ func (svr server) AddRoutes(prefix string, engine *gin.Engine) *gin.Engine {
 	g2.GET("",
 		user.RequireAdmin,
 		gtype.SetTypes(),
-		svr.index,
+		client.index,
 	)
 
 	// json data for Index
@@ -110,7 +116,7 @@ func (svr server) AddRoutes(prefix string, engine *gin.Engine) *gin.Engine {
 		user.RequireAdmin,
 		gtype.SetTypes(),
 		user.FetchAll,
-		svr.json,
+		client.json,
 	)
 
 	return engine

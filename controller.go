@@ -26,7 +26,7 @@ const (
 	homePath    = "/"
 )
 
-func (svr server) index(c *gin.Context) {
+func (client Client) index(c *gin.Context) {
 	c.HTML(http.StatusOK, "user/index", gin.H{
 		"Context":   c,
 		"VersionID": sn.VersionID(),
@@ -34,7 +34,7 @@ func (svr server) index(c *gin.Context) {
 	})
 }
 
-func (svr server) show(c *gin.Context) {
+func (client Client) show(c *gin.Context) {
 	u := user.From(c)
 	c.HTML(http.StatusOK, "user/show", gin.H{
 		"Context":   c,
@@ -46,7 +46,7 @@ func (svr server) show(c *gin.Context) {
 	})
 }
 
-func (svr server) edit(c *gin.Context) {
+func (client Client) edit(c *gin.Context) {
 	u := user.From(c)
 	c.HTML(http.StatusOK, "user/edit", gin.H{
 		"Context":   c,
@@ -136,7 +136,7 @@ func toUserTable(c *gin.Context, us []interface{}) (table *jUserIndex, err error
 	return
 }
 
-func (svr server) json(c *gin.Context) {
+func (client Client) json(c *gin.Context) {
 	us := user.UsersFrom(c)
 	if data, err := toUserTable(c, us); err != nil {
 		c.JSON(http.StatusInternalServerError, fmt.Sprintf("%v", err))
@@ -145,7 +145,7 @@ func (svr server) json(c *gin.Context) {
 	}
 }
 
-func (svr server) new(c *gin.Context) {
+func (client Client) new(c *gin.Context) {
 	cu := user.CurrentFrom(c)
 	if cu != nil {
 		log.Warningf("user %#v present, no need for new one", cu)
@@ -170,7 +170,7 @@ func (svr server) new(c *gin.Context) {
 	})
 }
 
-func (svr server) create(prefix string) gin.HandlerFunc {
+func (client Client) create(prefix string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		cu := user.CurrentFrom(c)
 		if cu != nil {
@@ -208,7 +208,7 @@ func (svr server) create(prefix string) gin.HandlerFunc {
 			return
 		}
 
-		ks, err := svr.AllocateIDs(c, []*datastore.Key{u.Key})
+		ks, err := client.AllocateIDs(c, []*datastore.Key{u.Key})
 		if err != nil {
 			log.Errorf(err.Error())
 			c.Redirect(http.StatusSeeOther, homePath)
@@ -221,7 +221,7 @@ func (svr server) create(prefix string) gin.HandlerFunc {
 		oa := user.NewOAuth(oaid)
 		oa.ID = u.ID()
 		oa.UpdatedAt = time.Now()
-		_, err = svr.RunInTransaction(c, func(tx *datastore.Transaction) error {
+		_, err = client.RunInTransaction(c, func(tx *datastore.Transaction) error {
 			ks := []*datastore.Key{oa.Key, u.Key}
 			es := []interface{}{&oa, u}
 			_, err := tx.PutMulti(ks, es)
@@ -250,7 +250,7 @@ func showPath(prefix string, id int64) string {
 	return fmt.Sprintf("%s/show/%d", prefix, id)
 }
 
-func (svr server) update(c *gin.Context) {
+func (client Client) update(c *gin.Context) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
@@ -263,7 +263,7 @@ func (svr server) update(c *gin.Context) {
 	}
 
 	u := user.New(c, uid)
-	err = svr.Get(c, u.Key, u)
+	err = client.Get(c, u.Key, u)
 	if err != nil {
 		log.Errorf("User/Controller#Update user.BySID Error: %s", err)
 		c.Abort()
@@ -282,7 +282,7 @@ func (svr server) update(c *gin.Context) {
 	newName.GoogleID = u.GoogleID
 
 	log.Debugf("Before datastore.RunInTransaction")
-	_, err = svr.RunInTransaction(c, func(tx *datastore.Transaction) error {
+	_, err = client.RunInTransaction(c, func(tx *datastore.Transaction) error {
 		nu := user.ToNUser(c, u)
 		entities := []interface{}{u, nu, newName, oldName}
 		ks := []*datastore.Key{u.Key, nu.Key, newName.Key, oldName.Key}
@@ -307,7 +307,7 @@ func (svr server) update(c *gin.Context) {
 	c.Redirect(http.StatusSeeOther, route)
 }
 
-func (svr server) gamesIndex(c *gin.Context) {
+func (client Client) gamesIndex(c *gin.Context) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
