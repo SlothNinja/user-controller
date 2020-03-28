@@ -18,13 +18,15 @@ const (
 
 type Client struct {
 	*datastore.Client
-	User user.Client
+	User  user.Client
+	Stats stats.Client
 }
 
 func NewClient(dsClient *datastore.Client) Client {
 	return Client{
 		Client: dsClient,
 		User:   user.NewClient(dsClient),
+		Stats:  stats.NewClient(dsClient),
 	}
 }
 
@@ -46,7 +48,7 @@ func (client Client) AddRoutes(prefix string, engine *gin.Engine) *gin.Engine {
 	// Show User
 	g1.GET("show/:uid",
 		client.User.Fetch,
-		stats.Fetch(user.From),
+		client.Stats.Fetch(user.From),
 		gtype.SetTypes(),
 		client.Show,
 	)
@@ -55,7 +57,7 @@ func (client Client) AddRoutes(prefix string, engine *gin.Engine) *gin.Engine {
 	g1.GET("edit/:uid",
 		// user.RequireLogin(),
 		client.User.Fetch,
-		stats.Fetch(user.From),
+		client.Stats.Fetch(user.From),
 		gtype.SetTypes(),
 		client.Edit,
 	)

@@ -69,6 +69,8 @@ github.com/SlothNinja/user-name v0.0.0-20200316004316-cb938e1f6eb0 h1:k/WWe/zZ+C
 github.com/SlothNinja/user-name v0.0.0-20200316004316-cb938e1f6eb0/go.mod h1:UCfCRxUBxuRjF8aoV3rT6JK/o5Y8o5dV7d8PIuwwIus=
 github.com/SlothNinja/user-stats v0.0.0-20200316003629-dfe63e057543 h1:eKK3KSBWNmcFz8svhJNHF9rMufJVkg7ewZu6+sZwK9o=
 github.com/SlothNinja/user-stats v0.0.0-20200316003629-dfe63e057543/go.mod h1:X799W01EI1rXQVO+jtZ/FPa+xwBkT/A0zFeAANTLeTY=
+github.com/SlothNinja/user-stats v0.0.0-20200328172023-f741b97fd54d h1:EpBjArkCzAtDkmzKcLHSNhu4Du/ptvFLKc3v111oYtM=
+github.com/SlothNinja/user-stats v0.0.0-20200328172023-f741b97fd54d/go.mod h1:X799W01EI1rXQVO+jtZ/FPa+xwBkT/A0zFeAANTLeTY=
 github.com/boj/redistore v0.0.0-20180917114910-cd5dcc76aeff/go.mod h1:+RTT1BOk5P97fT2CiHkbFQwkK3mjsFAP6zCYV2aXtjw=
 github.com/bradfitz/gomemcache v0.0.0-20190329173943-551aad21a668/go.mod h1:H0wQNHz2YrLsuXOZozoeDmnHXkNCRmMW0gwFWDfEZDA=
 github.com/bradleypeabody/gorilla-sessions-memcache v0.0.0-20181103040241-659414f458e1/go.mod h1:dkChI7Tbtx7H1Tj7TqGSZMOeGpMP5gLHtjroHd4agiI=

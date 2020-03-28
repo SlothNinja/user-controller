@@ -10,7 +10,7 @@ require (
 	github.com/SlothNinja/type v0.0.0-20200316011604-5ac825cb08e3
 	github.com/SlothNinja/user v0.0.0-20200328030804-db52ba432132
 	github.com/SlothNinja/user-name v0.0.0-20200316004316-cb938e1f6eb0
-	github.com/SlothNinja/user-stats v0.0.0-20200316003629-dfe63e057543
+	github.com/SlothNinja/user-stats v0.0.0-20200328172023-f741b97fd54d
 	github.com/gin-contrib/sessions v0.0.3
 	github.com/gin-gonic/gin v1.6.2
 	google.golang.org/appengine v1.6.5
