@@ -35,26 +35,56 @@ func (client Client) index(c *gin.Context) {
 }
 
 func (client Client) show(c *gin.Context) {
-	u := user.From(c)
+	u, err := client.User.GetUser(c)
+	if err != nil {
+		log.Errorf(err.Error())
+		restful.AddErrorf(c, err.Error())
+		c.Redirect(http.StatusSeeOther, homePath)
+		return
+	}
+
+	s, err := client.Stats.ByUser(c, u)
+	if err != nil {
+		log.Errorf(err.Error())
+		restful.AddErrorf(c, err.Error())
+		c.Redirect(http.StatusSeeOther, homePath)
+		return
+	}
+
 	c.HTML(http.StatusOK, "user/show", gin.H{
 		"Context":   c,
 		"VersionID": sn.VersionID(),
 		"User":      u,
 		"CUser":     user.CurrentFrom(c),
-		"IsAdmin":   user.IsAdmin(c),
+		"IsAdmin":   s,
 		"Stats":     stats.Fetched(c),
 	})
 }
 
 func (client Client) edit(c *gin.Context) {
-	u := user.From(c)
+	u, err := client.User.GetUser(c)
+	if err != nil {
+		log.Errorf(err.Error())
+		restful.AddErrorf(c, err.Error())
+		c.Redirect(http.StatusSeeOther, homePath)
+		return
+	}
+
+	s, err := client.Stats.ByUser(c, u)
+	if err != nil {
+		log.Errorf(err.Error())
+		restful.AddErrorf(c, err.Error())
+		c.Redirect(http.StatusSeeOther, homePath)
+		return
+	}
+
 	c.HTML(http.StatusOK, "user/edit", gin.H{
 		"Context":   c,
 		"VersionID": sn.VersionID(),
 		"User":      u,
 		"CUser":     user.CurrentFrom(c),
 		"IsAdmin":   user.IsAdmin(c),
-		"Stats":     stats.Fetched(c),
+		"Stats":     s,
 	})
 }
 
@@ -193,7 +223,7 @@ func (client Client) create(prefix string) gin.HandlerFunc {
 		u.LCName = strings.ToLower(u.Name)
 		u.Email = token.Email
 
-		uniq, err := user.NameIsUnique(c, u.Name)
+		uniq, err := client.User.NameIsUnique(c, u.Name)
 		if err != nil {
 			log.Errorf(err.Error())
 			c.Redirect(http.StatusSeeOther, homePath)
@@ -265,14 +295,15 @@ func (client Client) update(c *gin.Context) {
 	u := user.New(c, uid)
 	err = client.Get(c, u.Key, u)
 	if err != nil {
-		log.Errorf("User/Controller#Update user.BySID Error: %s", err)
+		log.Errorf(err.Error())
 		c.Abort()
 		return
 	}
 
 	oldName := name.New(u.LCName)
-	if err := u.Update(c); err != nil {
-		log.Errorf("User/Controller#Update u.update Error: %s", err)
+	err = client.User.Update(c, u)
+	if err != nil {
+		log.Errorf(err.Error())
 		restful.AddErrorf(c, err.Error())
 		route := fmt.Sprintf("/user/show/%s", c.Param("uid"))
 		c.Redirect(http.StatusSeeOther, route)
@@ -281,7 +312,6 @@ func (client Client) update(c *gin.Context) {
 	newName := name.New(u.LCName)
 	newName.GoogleID = u.GoogleID
 
-	log.Debugf("Before datastore.RunInTransaction")
 	_, err = client.RunInTransaction(c, func(tx *datastore.Transaction) error {
 		nu := user.ToNUser(c, u)
 		entities := []interface{}{u, nu, newName, oldName}
@@ -293,8 +323,6 @@ func (client Client) update(c *gin.Context) {
 
 		return tx.Delete(oldName.Key)
 	})
-
-	log.Debugf("error: %v", err)
 
 	switch {
 	case sn.IsVError(err):
