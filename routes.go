@@ -1,6 +1,7 @@
 package user_controller
 
 import (
+	"cloud.google.com/go/datastore"
 	"github.com/SlothNinja/game"
 	"github.com/SlothNinja/rating"
 	gtype "github.com/SlothNinja/type"
@@ -15,55 +16,67 @@ const (
 	logoutPath = "logout"
 )
 
-func AddRoutes(prefix string, engine *gin.Engine) {
+type Client struct {
+	*datastore.Client
+	User user.Client
+}
+
+func NewClient(dsClient *datastore.Client) Client {
+	return Client{
+		Client: dsClient,
+		User:   user.NewClient(dsClient),
+	}
+}
+
+func (client Client) AddRoutes(prefix string, engine *gin.Engine) *gin.Engine {
 	// User Group
 	g1 := engine.Group(prefix)
 	g1.GET("/new",
 		// user.RequireLogin(),
 		gtype.SetTypes(),
-		NewAction,
+		client.NewAction,
 	)
 
 	// Create
 	g1.POST("",
 		// user.RequireLogin(),
-		Create(prefix),
+		client.Create(prefix),
 	)
 
 	// Show User
 	g1.GET("show/:uid",
-		user.Fetch,
+		client.User.Fetch,
 		stats.Fetch(user.From),
 		gtype.SetTypes(),
-		Show,
+		client.Show,
 	)
 
 	// Edit User
 	g1.GET("edit/:uid",
 		// user.RequireLogin(),
-		user.Fetch,
+		client.User.Fetch,
 		stats.Fetch(user.From),
 		gtype.SetTypes(),
-		Edit,
+		client.Edit,
 	)
 
 	// Update User
 	g1.POST("update/:uid",
 		// user.RequireLogin(),
-		user.Fetch,
+		client.User.Fetch,
 		gtype.SetTypes(),
-		Update,
+		client.Update,
 	)
 
 	// User Ratings
 	g1.POST("show/:uid/ratings/json",
-		user.Fetch,
+		client.User.Fetch,
 		rating.JSONIndexAction,
 	)
 
 	g1.POST("edit/:uid/ratings/json",
 		// user.RequireLogin(),
-		user.Fetch,
+		client.User.Fetch,
 		rating.JSONIndexAction,
 	)
 
@@ -83,14 +96,14 @@ func AddRoutes(prefix string, engine *gin.Engine) {
 
 	g1.GET("as/:uid",
 		user.RequireAdmin,
-		user.As,
+		client.User.As,
 	)
 
 	g1.GET(loginPath, user.Login("/"+prefix+"/"+authPath))
 
 	g1.GET(logoutPath, user.Logout)
 
-	g1.GET(authPath, user.Auth("/"+prefix+"/"+authPath))
+	g1.GET(authPath, client.User.Auth("/"+prefix+"/"+authPath))
 
 	// Users group
 	g2 := engine.Group(prefix + "s")
@@ -99,14 +112,16 @@ func AddRoutes(prefix string, engine *gin.Engine) {
 	g2.GET("",
 		user.RequireAdmin,
 		gtype.SetTypes(),
-		Index,
+		client.Index,
 	)
 
 	// json data for Index
 	g2.POST("/json",
 		user.RequireAdmin,
 		gtype.SetTypes(),
-		user.FetchAll,
-		JSON,
+		client.User.FetchAll,
+		client.JSON,
 	)
+
+	return engine
 }
