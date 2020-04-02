@@ -18,6 +18,7 @@ import (
 	stats "github.com/SlothNinja/user-stats"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	"google.golang.org/appengine"
 )
 
 const (
@@ -26,67 +27,45 @@ const (
 	homePath    = "/"
 )
 
-func (client Client) index(c *gin.Context) {
+func Index(c *gin.Context) {
 	c.HTML(http.StatusOK, "user/index", gin.H{
 		"Context":   c,
-		"VersionID": sn.VersionID(),
+		"VersionID": appengine.VersionID(c),
 		"CUser":     user.CurrentFrom(c),
 	})
 }
 
-func (client Client) show(c *gin.Context) {
-	u, err := client.User.GetUser(c)
-	if err != nil {
-		log.Errorf(err.Error())
-		restful.AddErrorf(c, err.Error())
-		c.Redirect(http.StatusSeeOther, homePath)
-		return
-	}
-
-	s, err := client.Stats.ByUser(c, u)
-	if err != nil {
-		log.Errorf(err.Error())
-		restful.AddErrorf(c, err.Error())
-		c.Redirect(http.StatusSeeOther, homePath)
-		return
-	}
-
+func Show(c *gin.Context) {
+	u := user.From(c)
 	c.HTML(http.StatusOK, "user/show", gin.H{
 		"Context":   c,
-		"VersionID": sn.VersionID(),
+		"VersionID": appengine.VersionID(c),
 		"User":      u,
 		"CUser":     user.CurrentFrom(c),
-		"IsAdmin":   s,
+		"IsAdmin":   user.IsAdmin(c),
 		"Stats":     stats.Fetched(c),
 	})
 }
 
-func (client Client) edit(c *gin.Context) {
-	u, err := client.User.GetUser(c)
-	if err != nil {
-		log.Errorf(err.Error())
-		restful.AddErrorf(c, err.Error())
-		c.Redirect(http.StatusSeeOther, homePath)
-		return
-	}
-
-	s, err := client.Stats.ByUser(c, u)
-	if err != nil {
-		log.Errorf(err.Error())
-		restful.AddErrorf(c, err.Error())
-		c.Redirect(http.StatusSeeOther, homePath)
-		return
-	}
-
+func Edit(c *gin.Context) {
+	u := user.From(c)
 	c.HTML(http.StatusOK, "user/edit", gin.H{
 		"Context":   c,
-		"VersionID": sn.VersionID(),
+		"VersionID": appengine.VersionID(c),
 		"User":      u,
 		"CUser":     user.CurrentFrom(c),
 		"IsAdmin":   user.IsAdmin(c),
-		"Stats":     s,
+		"Stats":     stats.Fetched(c),
 	})
 }
+
+//func Remote(ctx *restful.Context, render render.Render, params martini.Params) {
+//	if u, err := user.ByGoogleID(ctx, params["uid"]); err == nil {
+//		render.JSON(http.StatusOK, u)
+//	} else {
+//		render.HTML(http.StatusGone, "", "")
+//	}
+//}
 
 type jUserIndex struct {
 	Data            []*jUser `json:"data"`
@@ -166,7 +145,7 @@ func toUserTable(c *gin.Context, us []interface{}) (table *jUserIndex, err error
 	return
 }
 
-func (client Client) json(c *gin.Context) {
+func JSON(c *gin.Context) {
 	us := user.UsersFrom(c)
 	if data, err := toUserTable(c, us); err != nil {
 		c.JSON(http.StatusInternalServerError, fmt.Sprintf("%v", err))
@@ -175,7 +154,7 @@ func (client Client) json(c *gin.Context) {
 	}
 }
 
-func (client Client) new(c *gin.Context) {
+func NewAction(c *gin.Context) {
 	cu := user.CurrentFrom(c)
 	if cu != nil {
 		log.Warningf("user %#v present, no need for new one", cu)
@@ -194,13 +173,25 @@ func (client Client) new(c *gin.Context) {
 	u := user.New(c, token.ID())
 	u.Data = token.User.Data
 
+	// u := user.New(c, 0)
+	// gu := user.GUserFrom(c)
+	// if gu == nil {
+	// 	restful.AddErrorf(c, "You must be logged in to access this page.")
+	// 	c.Redirect(http.StatusSeeOther, welcomePath)
+	// 	return
+	// }
+
+	// u.Name = strings.Split(gu.Email, "@")[0]
+	// u.LCName = strings.ToLower(u.Name)
+	// u.Email = gu.Email
+
 	c.HTML(http.StatusOK, "user/new", gin.H{
 		"Context": c,
 		"User":    u,
 	})
 }
 
-func (client Client) create(prefix string) gin.HandlerFunc {
+func Create(prefix string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		cu := user.CurrentFrom(c)
 		if cu != nil {
@@ -208,6 +199,22 @@ func (client Client) create(prefix string) gin.HandlerFunc {
 			c.Redirect(http.StatusSeeOther, homePath)
 			return
 		}
+		// u := user.FromGUser(c, user.GUserFrom(c))
+		// switch existing, err := user.ByGoogleID(c, u.GoogleID); {
+		// case err == user.ErrNotFound:
+		// case err != nil:
+		// 	restful.AddErrorf(c, err.Error())
+		// 	c.Redirect(http.StatusSeeOther, userNewPath)
+		// 	return
+		// case existing != nil:
+		// 	restful.AddErrorf(c, "You already have an account.")
+		// 	c.Redirect(http.StatusSeeOther, homePath)
+		// 	return
+		// default:
+		// 	log.Errorf("Unexpected result for user.Create. err: %v existing: %v", err, existing)
+		// 	c.Redirect(http.StatusSeeOther, userNewPath)
+		// 	return
+		// }
 
 		session := sessions.Default(c)
 		token, ok := user.SessionTokenFrom(session)
@@ -221,9 +228,10 @@ func (client Client) create(prefix string) gin.HandlerFunc {
 		u := user.New(c, 0)
 		u.Name = strings.Split(c.PostForm("user-name"), "@")[0]
 		u.LCName = strings.ToLower(u.Name)
+		// //u.Key = user.NewKey(c, 0)
 		u.Email = token.Email
 
-		uniq, err := client.User.NameIsUnique(c, u.Name)
+		uniq, err := user.NameIsUnique(c, u.Name)
 		if err != nil {
 			log.Errorf(err.Error())
 			c.Redirect(http.StatusSeeOther, homePath)
@@ -231,6 +239,8 @@ func (client Client) create(prefix string) gin.HandlerFunc {
 		}
 
 		if !uniq {
+			// n := name.New()
+			// if !name.IsUnique(c, u.LCName) {
 			err = fmt.Errorf("%q is not a unique user name.", u.LCName)
 			restful.AddErrorf(c, err.Error())
 			log.Warningf(err.Error())
@@ -238,7 +248,17 @@ func (client Client) create(prefix string) gin.HandlerFunc {
 			return
 		}
 
-		ks, err := client.AllocateIDs(c, []*datastore.Key{u.Key})
+		// n.GoogleID = u.GoogleID
+		// n.ID = u.LCName
+
+		dsClient, err := datastore.NewClient(c, "")
+		if err != nil {
+			log.Errorf(err.Error())
+			c.Redirect(http.StatusSeeOther, homePath)
+			return
+		}
+
+		ks, err := dsClient.AllocateIDs(c, []*datastore.Key{u.Key})
 		if err != nil {
 			log.Errorf(err.Error())
 			c.Redirect(http.StatusSeeOther, homePath)
@@ -251,7 +271,7 @@ func (client Client) create(prefix string) gin.HandlerFunc {
 		oa := user.NewOAuth(oaid)
 		oa.ID = u.ID()
 		oa.UpdatedAt = time.Now()
-		_, err = client.RunInTransaction(c, func(tx *datastore.Transaction) error {
+		_, err = dsClient.RunInTransaction(c, func(tx *datastore.Transaction) error {
 			ks := []*datastore.Key{oa.Key, u.Key}
 			es := []interface{}{&oa, u}
 			_, err := tx.PutMulti(ks, es)
@@ -280,9 +300,32 @@ func showPath(prefix string, id int64) string {
 	return fmt.Sprintf("%s/show/%d", prefix, id)
 }
 
-func (client Client) update(c *gin.Context) {
+//func SendTestMessage(c *restful.Context, render render.Render, routes martini.Routes, params martini.Params) {
+//	u := user.Fetched(c)
+//	m := new(xmpp.Message)
+//	m.To = []string{u.Email}
+//	m.Body = fmt.Sprintf("Test message from SlothNinja Games for %s", u.Name)
+//	send.XMPP(c, m)
+//	ctx.AddNoticef("Test IM sent to %s", u.Name)
+//	render.Redirect(routes.URLFor("user_show", params["uid"]), http.StatusSeeOther)
+//}
+//
+//func SendIMInvite(ctx *restful.Context, render render.Render, routes martini.Routes, params martini.Params) {
+//	u := user.Fetched(ctx)
+//	send.Invite(ctx, u.Email)
+//	ctx.AddNoticef("IM Invite sent to %s", u.Name)
+//	render.Redirect(routes.URLFor("user_show", params["uid"]), http.StatusSeeOther)
+//}
+func Update(c *gin.Context) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
+
+	dsClient, err := datastore.NewClient(c, "")
+	if err != nil {
+		log.Errorf(err.Error())
+		c.Abort()
+		return
+	}
 
 	// Get Resource
 	uid, err := strconv.ParseInt(c.Param("uid"), 10, 64)
@@ -291,19 +334,18 @@ func (client Client) update(c *gin.Context) {
 		c.Abort()
 		return
 	}
-
 	u := user.New(c, uid)
-	err = client.Get(c, u.Key, u)
+
+	err = dsClient.Get(c, u.Key, u)
 	if err != nil {
-		log.Errorf(err.Error())
+		log.Errorf("User/Controller#Update user.BySID Error: %s", err)
 		c.Abort()
 		return
 	}
 
 	oldName := name.New(u.LCName)
-	err = client.User.Update(c, u)
-	if err != nil {
-		log.Errorf(err.Error())
+	if err := u.Update(c); err != nil {
+		log.Errorf("User/Controller#Update u.update Error: %s", err)
 		restful.AddErrorf(c, err.Error())
 		route := fmt.Sprintf("/user/show/%s", c.Param("uid"))
 		c.Redirect(http.StatusSeeOther, route)
@@ -312,7 +354,8 @@ func (client Client) update(c *gin.Context) {
 	newName := name.New(u.LCName)
 	newName.GoogleID = u.GoogleID
 
-	_, err = client.RunInTransaction(c, func(tx *datastore.Transaction) error {
+	log.Debugf("Before datastore.RunInTransaction")
+	_, err = dsClient.RunInTransaction(c, func(tx *datastore.Transaction) error {
 		nu := user.ToNUser(c, u)
 		entities := []interface{}{u, nu, newName, oldName}
 		ks := []*datastore.Key{u.Key, nu.Key, newName.Key, oldName.Key}
@@ -323,6 +366,8 @@ func (client Client) update(c *gin.Context) {
 
 		return tx.Delete(oldName.Key)
 	})
+
+	log.Debugf("error: %v", err)
 
 	switch {
 	case sn.IsVError(err):
@@ -335,14 +380,13 @@ func (client Client) update(c *gin.Context) {
 	c.Redirect(http.StatusSeeOther, route)
 }
 
-func (client Client) gamesIndex(c *gin.Context) {
+func GamesIndex(c *gin.Context) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	status := game.StatusFrom(c)
-	if status != game.NoStatus {
+	if status := game.StatusFrom(c); status != game.NoStatus {
 		c.HTML(200, "shared/games_index", gin.H{})
-		return
+	} else {
+		c.HTML(200, "user/games_index", gin.H{})
 	}
-	c.HTML(200, "user/games_index", gin.H{})
 }

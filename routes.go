@@ -1,7 +1,6 @@
 package user_controller
 
 import (
-	"cloud.google.com/go/datastore"
 	"github.com/SlothNinja/game"
 	"github.com/SlothNinja/rating"
 	gtype "github.com/SlothNinja/type"
@@ -16,61 +15,82 @@ const (
 	logoutPath = "logout"
 )
 
-type Client struct {
-	*datastore.Client
-	Game   game.Client
-	Rating rating.Client
-	Stats  stats.Client
-	User   user.Client
-}
-
-func NewClient(dsClient *datastore.Client) Client {
-	return Client{
-		Client: dsClient,
-		Game:   game.NewClient(dsClient),
-		Rating: rating.NewClient(dsClient),
-		Stats:  stats.NewClient(dsClient),
-		User:   user.NewClient(dsClient),
-	}
-}
-
-func (client Client) AddRoutes(prefix string, engine *gin.Engine) *gin.Engine {
+func AddRoutes(prefix string, engine *gin.Engine) {
 	// User Group
 	g1 := engine.Group(prefix)
-	g1.GET("/new", client.new)
+	g1.GET("/new",
+		// user.RequireLogin(),
+		gtype.SetTypes(),
+		NewAction,
+	)
 
 	// Create
-	g1.POST("", client.create(prefix))
+	g1.POST("",
+		// user.RequireLogin(),
+		Create(prefix),
+	)
 
 	// Show User
-	g1.GET("show/:uid", client.show)
+	g1.GET("show/:uid",
+		user.Fetch,
+		stats.Fetch(user.From),
+		gtype.SetTypes(),
+		Show,
+	)
 
 	// Edit User
-	g1.GET("edit/:uid", client.edit)
+	g1.GET("edit/:uid",
+		// user.RequireLogin(),
+		user.Fetch,
+		stats.Fetch(user.From),
+		gtype.SetTypes(),
+		Edit,
+	)
 
 	// Update User
-	g1.POST("update/:uid", client.update)
+	g1.POST("update/:uid",
+		// user.RequireLogin(),
+		user.Fetch,
+		gtype.SetTypes(),
+		Update,
+	)
 
 	// User Ratings
-	g1.POST("show/:uid/ratings/json", client.Rating.JSONIndexAction)
+	g1.POST("show/:uid/ratings/json",
+		user.Fetch,
+		rating.JSONIndexAction,
+	)
 
-	g1.POST("edit/:uid/ratings/json", client.Rating.JSONIndexAction)
+	g1.POST("edit/:uid/ratings/json",
+		// user.RequireLogin(),
+		user.Fetch,
+		rating.JSONIndexAction,
+	)
 
 	// User Games
-	g1.POST("show/:uid/games/json", client.Game.JSONIndexAction)
+	g1.POST("show/:uid/games/json",
+		gtype.SetTypes(),
+		game.GetFiltered(gtype.All),
+		game.JSONIndexAction,
+	)
 
-	g1.POST("edit/:uid/games/json", client.Game.JSONIndexAction)
+	g1.POST("edit/:uid/games/json",
+		// user.RequireLogin(),
+		gtype.SetTypes(),
+		game.GetFiltered(gtype.All),
+		game.JSONIndexAction,
+	)
 
 	g1.GET("as/:uid",
 		user.RequireAdmin,
-		client.User.As,
+		user.As,
 	)
 
 	g1.GET(loginPath, user.Login("/"+prefix+"/"+authPath))
 
 	g1.GET(logoutPath, user.Logout)
 
-	g1.GET(authPath, client.User.Auth("/"+prefix+"/"+authPath))
+	g1.GET(authPath, user.Auth("/"+prefix+"/"+authPath))
 
 	// Users group
 	g2 := engine.Group(prefix + "s")
@@ -79,16 +99,14 @@ func (client Client) AddRoutes(prefix string, engine *gin.Engine) *gin.Engine {
 	g2.GET("",
 		user.RequireAdmin,
 		gtype.SetTypes(),
-		client.index,
+		Index,
 	)
 
 	// json data for Index
 	g2.POST("/json",
 		user.RequireAdmin,
 		gtype.SetTypes(),
-		client.User.FetchAll,
-		client.json,
+		user.FetchAll,
+		JSON,
 	)
-
-	return engine
 }
