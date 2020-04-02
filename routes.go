@@ -17,16 +17,18 @@ const (
 )
 
 type Client struct {
-	*datastore.Client
-	User  user.Client
-	Stats stats.Client
+	DS     *datastore.Client
+	User   user.Client
+	Stats  stats.Client
+	Rating rating.Client
 }
 
 func NewClient(dsClient *datastore.Client) Client {
 	return Client{
-		Client: dsClient,
+		DS:     dsClient,
 		User:   user.NewClient(dsClient),
 		Stats:  stats.NewClient(dsClient),
+		Rating: rating.NewClient(dsClient),
 	}
 }
 
@@ -73,13 +75,13 @@ func (client Client) AddRoutes(prefix string, engine *gin.Engine) *gin.Engine {
 	// User Ratings
 	g1.POST("show/:uid/ratings/json",
 		client.User.Fetch,
-		rating.JSONIndexAction,
+		client.Rating.JSONIndexAction,
 	)
 
 	g1.POST("edit/:uid/ratings/json",
 		// user.RequireLogin(),
 		client.User.Fetch,
-		rating.JSONIndexAction,
+		client.Rating.JSONIndexAction,
 	)
 
 	// User Games

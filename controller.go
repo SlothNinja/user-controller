@@ -230,7 +230,7 @@ func (client Client) Create(prefix string) gin.HandlerFunc {
 			return
 		}
 
-		ks, err := client.AllocateIDs(c, []*datastore.Key{u.Key})
+		ks, err := client.DS.AllocateIDs(c, []*datastore.Key{u.Key})
 		if err != nil {
 			log.Errorf(err.Error())
 			c.Redirect(http.StatusSeeOther, homePath)
@@ -243,7 +243,7 @@ func (client Client) Create(prefix string) gin.HandlerFunc {
 		oa := user.NewOAuth(oaid)
 		oa.ID = u.ID()
 		oa.UpdatedAt = time.Now()
-		_, err = client.RunInTransaction(c, func(tx *datastore.Transaction) error {
+		_, err = client.DS.RunInTransaction(c, func(tx *datastore.Transaction) error {
 			ks := []*datastore.Key{oa.Key, u.Key}
 			es := []interface{}{&oa, u}
 			_, err := tx.PutMulti(ks, es)
@@ -301,7 +301,7 @@ func (client Client) Update(c *gin.Context) {
 	}
 	u := user.New(c, uid)
 
-	err = client.Get(c, u.Key, u)
+	err = client.DS.Get(c, u.Key, u)
 	if err != nil {
 		log.Errorf("User/Controller#Update user.BySID Error: %s", err)
 		c.Abort()
@@ -321,7 +321,7 @@ func (client Client) Update(c *gin.Context) {
 	newName.GoogleID = u.GoogleID
 
 	log.Debugf("Before datastore.RunInTransaction")
-	_, err = client.RunInTransaction(c, func(tx *datastore.Transaction) error {
+	_, err = client.DS.RunInTransaction(c, func(tx *datastore.Transaction) error {
 		nu := user.ToNUser(c, u)
 		entities := []interface{}{u, nu, newName, oldName}
 		ks := []*datastore.Key{u.Key, nu.Key, newName.Key, oldName.Key}
