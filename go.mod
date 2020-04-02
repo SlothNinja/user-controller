@@ -2,7 +2,7 @@ module github.com/SlothNinja/user-controller
 
 require (
 	cloud.google.com/go/datastore v1.1.0
-	github.com/SlothNinja/game v0.0.0-20200402022917-11cdcb90d6d5
+	github.com/SlothNinja/game v0.0.0-20200402024946-c54abc9cef2c
 	github.com/SlothNinja/log v0.0.2
 	github.com/SlothNinja/rating v0.0.0-20200402000143-d750ecc77bc4
 	github.com/SlothNinja/restful v0.0.0-20200317231650-e1a2eb3f56b2
