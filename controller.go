@@ -12,9 +12,7 @@ import (
 	"github.com/SlothNinja/game"
 	"github.com/SlothNinja/log"
 	"github.com/SlothNinja/restful"
-	"github.com/SlothNinja/sn"
 	"github.com/SlothNinja/user"
-	name "github.com/SlothNinja/user-name"
 	stats "github.com/SlothNinja/user-stats"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -59,14 +57,6 @@ func (client Client) Edit(c *gin.Context) {
 	})
 }
 
-//func Remote(ctx *restful.Context, render render.Render, params martini.Params) {
-//	if u, err := user.ByGoogleID(ctx, params["uid"]); err == nil {
-//		render.JSON(http.StatusOK, u)
-//	} else {
-//		render.HTML(http.StatusGone, "", "")
-//	}
-//}
-
 type jUserIndex struct {
 	Data            []*jUser `json:"data"`
 	Draw            int      `json:"draw"`
@@ -90,59 +80,37 @@ type jUser struct {
 	OmitUpdatedAt omit          `json:"updatedat,omitempty"`
 }
 
-func toUserTable(c *gin.Context, us []interface{}) (table *jUserIndex, err error) {
+func toUserTable(c *gin.Context, us []*user.User) (*jUserIndex, error) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
 
-	table = new(jUserIndex)
+	table := new(jUserIndex)
 	l := len(us)
 	table.Data = make([]*jUser, l)
 
-	var (
-		u  *user.User
-		nu *user.NUser
-		ok bool
-	)
-
-	for i, uinf := range us {
-		if u, ok = uinf.(*user.User); ok {
-			table.Data[i] = &jUser{
-				IntID:    u.ID(),
-				StringID: "",
-				OldID:    0,
-				GoogleID: u.GoogleID,
-				Name:     u.Name,
-				Email:    u.Email,
-				Gravatar: user.Gravatar(u),
-				Joined:   u.CreatedAt,
-				Updated:  u.UpdatedAt,
-			}
-		} else if nu, ok = uinf.(*user.NUser); ok {
-			table.Data[i] = &jUser{
-				IntID:    0,
-				StringID: nu.ID(),
-				OldID:    nu.OldID,
-				GoogleID: nu.GoogleID,
-				Name:     nu.Name,
-				Email:    nu.Email,
-				Gravatar: user.NGravatar(nu),
-				Joined:   nu.CreatedAt,
-				Updated:  nu.UpdatedAt,
-			}
-		} else {
-			err = fmt.Errorf("not user")
-			return
+	for i, u := range us {
+		table.Data[i] = &jUser{
+			IntID:    u.ID(),
+			StringID: "",
+			OldID:    0,
+			GoogleID: u.GoogleID,
+			Name:     u.Name,
+			Email:    u.Email,
+			Gravatar: user.Gravatar(u),
+			Joined:   u.CreatedAt,
+			Updated:  u.UpdatedAt,
 		}
 	}
 
-	if draw, err := strconv.Atoi(c.PostForm("draw")); err != nil {
+	draw, err := strconv.Atoi(c.PostForm("draw"))
+	if err != nil {
 		return nil, err
-	} else {
-		table.Draw = draw
 	}
+
+	table.Draw = draw
 	table.RecordsTotal = user.CountFrom(c)
 	table.RecordsFiltered = user.CountFrom(c)
-	return
+	return table, nil
 }
 
 func (client Client) JSON(c *gin.Context) {
@@ -173,18 +141,6 @@ func (client Client) NewAction(c *gin.Context) {
 
 	u := user.New(c, token.ID())
 	u.Data = token.User.Data
-
-	// u := user.New(c, 0)
-	// gu := user.GUserFrom(c)
-	// if gu == nil {
-	// 	restful.AddErrorf(c, "You must be logged in to access this page.")
-	// 	c.Redirect(http.StatusSeeOther, welcomePath)
-	// 	return
-	// }
-
-	// u.Name = strings.Split(gu.Email, "@")[0]
-	// u.LCName = strings.ToLower(u.Name)
-	// u.Email = gu.Email
 
 	c.HTML(http.StatusOK, "user/new", gin.H{
 		"Context": c,
@@ -272,22 +228,6 @@ func showPath(prefix string, id int64) string {
 	return fmt.Sprintf("%s/show/%d", prefix, id)
 }
 
-//func SendTestMessage(c *restful.Context, render render.Render, routes martini.Routes, params martini.Params) {
-//	u := user.Fetched(c)
-//	m := new(xmpp.Message)
-//	m.To = []string{u.Email}
-//	m.Body = fmt.Sprintf("Test message from SlothNinja Games for %s", u.Name)
-//	send.XMPP(c, m)
-//	ctx.AddNoticef("Test IM sent to %s", u.Name)
-//	render.Redirect(routes.URLFor("user_show", params["uid"]), http.StatusSeeOther)
-//}
-//
-//func SendIMInvite(ctx *restful.Context, render render.Render, routes martini.Routes, params martini.Params) {
-//	u := user.Fetched(ctx)
-//	send.Invite(ctx, u.Email)
-//	ctx.AddNoticef("IM Invite sent to %s", u.Name)
-//	render.Redirect(routes.URLFor("user_show", params["uid"]), http.StatusSeeOther)
-//}
 func (client Client) Update(c *gin.Context) {
 	log.Debugf("Entering")
 	defer log.Debugf("Exiting")
@@ -296,53 +236,31 @@ func (client Client) Update(c *gin.Context) {
 	uid, err := strconv.ParseInt(c.Param("uid"), 10, 64)
 	if err != nil {
 		log.Errorf(err.Error())
-		c.Abort()
+		c.Redirect(http.StatusSeeOther, homePath)
 		return
 	}
-	u := user.New(c, uid)
+	route := fmt.Sprintf("/user/show/%s", c.Param("uid"))
 
+	u := user.New(c, uid)
 	err = client.DS.Get(c, u.Key, u)
 	if err != nil {
-		log.Errorf("User/Controller#Update user.BySID Error: %s", err)
-		c.Abort()
-		return
-	}
-
-	oldName := name.New(u.LCName)
-	err = client.User.Update(c, u)
-	if err != nil {
 		log.Errorf(err.Error())
-		restful.AddErrorf(c, err.Error())
-		route := fmt.Sprintf("/user/show/%s", c.Param("uid"))
 		c.Redirect(http.StatusSeeOther, route)
 		return
 	}
-	newName := name.New(u.LCName)
-	newName.GoogleID = u.GoogleID
 
-	log.Debugf("Before datastore.RunInTransaction")
-	_, err = client.DS.RunInTransaction(c, func(tx *datastore.Transaction) error {
-		nu := user.ToNUser(c, u)
-		entities := []interface{}{u, nu, newName, oldName}
-		ks := []*datastore.Key{u.Key, nu.Key, newName.Key, oldName.Key}
-		_, err := tx.PutMulti(ks, entities)
-		if err != nil {
-			return err
-		}
+	err = client.User.Update(c, u)
+	if err != nil {
+		log.Errorf(err.Error())
+		c.Redirect(http.StatusSeeOther, route)
+		return
+	}
 
-		return tx.Delete(oldName.Key)
-	})
-
-	log.Debugf("error: %v", err)
-
-	switch {
-	case sn.IsVError(err):
-		restful.AddErrorf(c, err.Error())
-	case err != nil:
+	_, err = client.DS.Put(c, u.Key, u)
+	if err != nil {
 		log.Errorf(err.Error())
 	}
 
-	route := fmt.Sprintf("/user/show/%s", c.Param("uid"))
 	c.Redirect(http.StatusSeeOther, route)
 }
 
