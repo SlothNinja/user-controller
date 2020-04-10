@@ -16,7 +16,6 @@ import (
 	stats "github.com/SlothNinja/user-stats"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
-	"google.golang.org/appengine"
 )
 
 const (
@@ -27,33 +26,30 @@ const (
 
 func (client Client) Index(c *gin.Context) {
 	c.HTML(http.StatusOK, "user/index", gin.H{
-		"Context":   c,
-		"VersionID": appengine.VersionID(c),
-		"CUser":     user.CurrentFrom(c),
+		"Context": c,
+		"CUser":   user.CurrentFrom(c),
 	})
 }
 
 func (client Client) Show(c *gin.Context) {
 	u := user.From(c)
 	c.HTML(http.StatusOK, "user/show", gin.H{
-		"Context":   c,
-		"VersionID": appengine.VersionID(c),
-		"User":      u,
-		"CUser":     user.CurrentFrom(c),
-		"IsAdmin":   user.IsAdmin(c),
-		"Stats":     stats.Fetched(c),
+		"Context": c,
+		"User":    u,
+		"CUser":   user.CurrentFrom(c),
+		"IsAdmin": user.IsAdmin(c),
+		"Stats":   stats.Fetched(c),
 	})
 }
 
 func (client Client) Edit(c *gin.Context) {
 	u := user.From(c)
 	c.HTML(http.StatusOK, "user/edit", gin.H{
-		"Context":   c,
-		"VersionID": appengine.VersionID(c),
-		"User":      u,
-		"CUser":     user.CurrentFrom(c),
-		"IsAdmin":   user.IsAdmin(c),
-		"Stats":     stats.Fetched(c),
+		"Context": c,
+		"User":    u,
+		"CUser":   user.CurrentFrom(c),
+		"IsAdmin": user.IsAdmin(c),
+		"Stats":   stats.Fetched(c),
 	})
 }
 
