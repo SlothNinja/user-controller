@@ -99,7 +99,6 @@ func toUserTable(c *gin.Context, us []*user.User) (*jUserIndex, error) {
 			IntID:    u.ID(),
 			StringID: "",
 			OldID:    0,
-			GoogleID: u.GoogleID,
 			Name:     u.Name,
 			Email:    u.Email,
 			Gravatar: user.Gravatar(u),
@@ -145,8 +144,9 @@ func (client Client) NewAction(c *gin.Context) {
 		return
 	}
 
-	u := user.New(c, token.ID())
-	u.Data = token.User.Data
+	u := user.New(c, 0)
+	u.Data = token.Data
+	u.Key = token.Key
 
 	c.HTML(http.StatusOK, "user/new", gin.H{
 		"Context": c,
@@ -218,8 +218,9 @@ func (client Client) Create(prefix string) gin.HandlerFunc {
 			c.Redirect(http.StatusSeeOther, homePath)
 			return
 		}
-		token.User = u
+		token.Data = u.Data
 		token.Loaded = true
+		token.Key = u.Key
 		err = token.SaveTo(session)
 		if err != nil {
 			log.Errorf(err.Error())
