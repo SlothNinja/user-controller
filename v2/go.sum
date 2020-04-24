@@ -73,6 +73,10 @@ github.com/SlothNinja/user/v2 v2.0.0-alpha.1 h1:mhch6fFAS3tFxCrw0LnrRhbsd7ZHiOEj
 github.com/SlothNinja/user/v2 v2.0.0-alpha.1/go.mod h1:OKuiyuX8hhOgwu+nt9e5/iVwwf9LKbxeZdeCSchjyYU=
 github.com/SlothNinja/user/v2 v2.0.0-alpha.2 h1:a0f2LwW30mbkujD5epooJ9hdQwdSE6HnRAUFYFO/4Ew=
 github.com/SlothNinja/user/v2 v2.0.0-alpha.2/go.mod h1:OKuiyuX8hhOgwu+nt9e5/iVwwf9LKbxeZdeCSchjyYU=
+github.com/SlothNinja/user/v2 v2.0.0-alpha.3 h1:lmJzdozOddGoV1lVstU/T87QwQEKVm4MtXLb+KOAmu0=
+github.com/SlothNinja/user/v2 v2.0.0-alpha.3/go.mod h1:OKuiyuX8hhOgwu+nt9e5/iVwwf9LKbxeZdeCSchjyYU=
+github.com/SlothNinja/user/v2 v2.0.0-alpha.4 h1:aD1NUlM0YL9iFIPDwFFp0w2+BOb0EWjI/Z5oYG2CFCs=
+github.com/SlothNinja/user/v2 v2.0.0-alpha.4/go.mod h1:OKuiyuX8hhOgwu+nt9e5/iVwwf9LKbxeZdeCSchjyYU=
 github.com/boj/redistore v0.0.0-20180917114910-cd5dcc76aeff/go.mod h1:+RTT1BOk5P97fT2CiHkbFQwkK3mjsFAP6zCYV2aXtjw=
 github.com/bradfitz/gomemcache v0.0.0-20190329173943-551aad21a668/go.mod h1:H0wQNHz2YrLsuXOZozoeDmnHXkNCRmMW0gwFWDfEZDA=
 github.com/bradleypeabody/gorilla-sessions-memcache v0.0.0-20181103040241-659414f458e1/go.mod h1:dkChI7Tbtx7H1Tj7TqGSZMOeGpMP5gLHtjroHd4agiI=

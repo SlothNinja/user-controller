@@ -8,7 +8,7 @@ require (
 	github.com/SlothNinja/restful v1.0.0
 	github.com/SlothNinja/type v1.0.0
 	github.com/SlothNinja/user-stats/v2 v2.0.0-alpha.1
-	github.com/SlothNinja/user/v2 v2.0.0-alpha.2
+	github.com/SlothNinja/user/v2 v2.0.0-alpha.4
 	github.com/gin-contrib/sessions v0.0.3
 	github.com/gin-gonic/gin v1.6.2
 	github.com/golang/protobuf v1.4.0 // indirect
