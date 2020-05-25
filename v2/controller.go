@@ -144,7 +144,7 @@ func (client Client) NewAction(c *gin.Context) {
 		return
 	}
 
-	u := user.New(c, 0)
+	u := user.New(0)
 	u.Data = token.Data
 	u.Key = token.Key
 
@@ -172,7 +172,7 @@ func (client Client) Create(prefix string) gin.HandlerFunc {
 		}
 
 		// // Fell through 'switch' thus err == user.ErrNotFound
-		u := user.New(c, 0)
+		u := user.New(0)
 		u.Name = strings.Split(c.PostForm("user-name"), "@")[0]
 		u.LCName = strings.ToLower(u.Name)
 		u.Email = token.Email
@@ -248,7 +248,7 @@ func (client Client) Update(c *gin.Context) {
 	}
 	route := fmt.Sprintf("/user/show/%s", c.Param("uid"))
 
-	u := user.New(c, uid)
+	u := user.New(uid)
 	err = client.DS.Get(c, u.Key, u)
 	if err != nil {
 		log.Errorf(err.Error())

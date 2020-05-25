@@ -61,6 +61,7 @@ github.com/SlothNinja/send v1.0.0/go.mod h1:87Tqrad+LSiWi6UJBEg31jTAM1ll7Ob3btjF
 github.com/SlothNinja/sn v0.0.0-20200319230317-a899e08418dc/go.mod h1:epqp39ct88tFhHY/v/LwJp8jWrRVKe09t7MEeY/BCTc=
 github.com/SlothNinja/sn v1.0.0 h1:OFawz2eTO6NuYGKuKUMn43RY0U/Y1V7BD5DCJXFLe58=
 github.com/SlothNinja/sn v1.0.0/go.mod h1:LpLTLYlEk9jsJG6521A2BwK27aqivJCb60swj3v605s=
+github.com/SlothNinja/sn/v2 v2.0.0-alpha.1/go.mod h1:uc+VqtuoIhdc7IyaYXp3Yn7v4hnAEnfyPhG/n59UBEE=
 github.com/SlothNinja/type v1.0.0 h1:5IwyaRDB9Cov+ZXVtVAC2p2uWxDd1FpZQXXyTYh83pw=
 github.com/SlothNinja/type v1.0.0/go.mod h1:hCF5nTtjt9h1w92eVzPPrrNLyrsRXGiKSlZZylTmDlQ=
 github.com/SlothNinja/user v1.0.0 h1:6re2MkV/JbIKgEiGzFIh+KDGMjn6+JPEA3keQhUkU58=
@@ -71,12 +72,9 @@ github.com/SlothNinja/user-stats/v2 v2.0.0-alpha.1 h1:7DJAJgPx80Hdfpo96Wtn2KbEfh
 github.com/SlothNinja/user-stats/v2 v2.0.0-alpha.1/go.mod h1:qCGqUE5jo7+RJdFYdxdbDYUwrlMbrUBfdJfVCG7LcCI=
 github.com/SlothNinja/user/v2 v2.0.0-alpha.1 h1:mhch6fFAS3tFxCrw0LnrRhbsd7ZHiOEjCjZBl0ia/Bo=
 github.com/SlothNinja/user/v2 v2.0.0-alpha.1/go.mod h1:OKuiyuX8hhOgwu+nt9e5/iVwwf9LKbxeZdeCSchjyYU=
-github.com/SlothNinja/user/v2 v2.0.0-alpha.2 h1:a0f2LwW30mbkujD5epooJ9hdQwdSE6HnRAUFYFO/4Ew=
-github.com/SlothNinja/user/v2 v2.0.0-alpha.2/go.mod h1:OKuiyuX8hhOgwu+nt9e5/iVwwf9LKbxeZdeCSchjyYU=
-github.com/SlothNinja/user/v2 v2.0.0-alpha.3 h1:lmJzdozOddGoV1lVstU/T87QwQEKVm4MtXLb+KOAmu0=
-github.com/SlothNinja/user/v2 v2.0.0-alpha.3/go.mod h1:OKuiyuX8hhOgwu+nt9e5/iVwwf9LKbxeZdeCSchjyYU=
-github.com/SlothNinja/user/v2 v2.0.0-alpha.4 h1:aD1NUlM0YL9iFIPDwFFp0w2+BOb0EWjI/Z5oYG2CFCs=
-github.com/SlothNinja/user/v2 v2.0.0-alpha.4/go.mod h1:OKuiyuX8hhOgwu+nt9e5/iVwwf9LKbxeZdeCSchjyYU=
+github.com/SlothNinja/user/v2 v2.0.0-alpha.8/go.mod h1:RdFPJNSUFfM2gM0t53MQgf2yoQUw5Dpk0HkUdZaeP90=
+github.com/SlothNinja/user/v2 v2.0.0-alpha.9 h1:1Wl1N/IvC2p+DMThP6kciqb4iLCBIZSkajmFYRq3nJk=
+github.com/SlothNinja/user/v2 v2.0.0-alpha.9/go.mod h1:N1edkPsrdyPUioi5eR4I4tfa4MzSf8jdAPN3ZTBIcSs=
 github.com/boj/redistore v0.0.0-20180917114910-cd5dcc76aeff/go.mod h1:+RTT1BOk5P97fT2CiHkbFQwkK3mjsFAP6zCYV2aXtjw=
 github.com/bradfitz/gomemcache v0.0.0-20190329173943-551aad21a668/go.mod h1:H0wQNHz2YrLsuXOZozoeDmnHXkNCRmMW0gwFWDfEZDA=
 github.com/bradleypeabody/gorilla-sessions-memcache v0.0.0-20181103040241-659414f458e1/go.mod h1:dkChI7Tbtx7H1Tj7TqGSZMOeGpMP5gLHtjroHd4agiI=
