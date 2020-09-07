@@ -11,7 +11,7 @@ import (
 	"cloud.google.com/go/datastore"
 	"github.com/SlothNinja/game"
 	"github.com/SlothNinja/log"
-	"github.com/SlothNinja/restful"
+	"github.com/SlothNinja/sn/v2"
 	stats "github.com/SlothNinja/user-stats/v2"
 	"github.com/SlothNinja/user/v2"
 	"github.com/gin-contrib/sessions"
@@ -22,6 +22,9 @@ const (
 	welcomePath = "/welcome"
 	userNewPath = "/user/new"
 	homePath    = "/"
+	msgEnter    = "Entering"
+	msgExit     = "Exiting"
+	uidParam    = "uid"
 )
 
 func (client Client) Index(c *gin.Context) {
@@ -32,6 +35,9 @@ func (client Client) Index(c *gin.Context) {
 }
 
 func (client Client) Show(c *gin.Context) {
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
+
 	u := user.From(c)
 	c.HTML(http.StatusOK, "user/show", gin.H{
 		"Context": c,
@@ -43,6 +49,9 @@ func (client Client) Show(c *gin.Context) {
 }
 
 func (client Client) Edit(c *gin.Context) {
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
+
 	u := user.From(c)
 	c.HTML(http.StatusOK, "user/edit", gin.H{
 		"Context": c,
@@ -54,13 +63,16 @@ func (client Client) Edit(c *gin.Context) {
 }
 
 func (client Client) Current(c *gin.Context) {
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
+
 	cu, err := client.User.Current(c)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{"error": err.Error()})
 		return
 	}
 	c.Header("Access-Control-Allow-Origin", "*")
-	c.JSON(http.StatusOK, cu)
+	c.JSON(http.StatusOK, gin.H{"cu": cu})
 }
 
 type jUserIndex struct {
@@ -87,8 +99,8 @@ type jUser struct {
 }
 
 func toUserTable(c *gin.Context, us []*user.User) (*jUserIndex, error) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	table := new(jUserIndex)
 	l := len(us)
@@ -118,88 +130,117 @@ func toUserTable(c *gin.Context, us []*user.User) (*jUserIndex, error) {
 	return table, nil
 }
 
-func (client Client) JSON(c *gin.Context) {
-	us := user.UsersFrom(c)
-	data, err := toUserTable(c, us)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, fmt.Sprintf("%v", err))
-		return
+func (client Client) JSON(uidParam string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		log.Debugf(msgEnter)
+		defer log.Debugf(msgExit)
+
+		uid, err := getUID(c, uidParam)
+		if err != nil {
+			sn.JErr(c, err)
+			return
+		}
+
+		u, err := client.User.Get(c, uid)
+		if err != nil {
+			sn.JErr(c, err)
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"user": u})
 	}
-	c.JSON(http.StatusOK, data)
 }
 
+// func (client Client) JSON(c *gin.Context) {
+// 	log.Debugf(msgEnter)
+// 	defer log.Debugf(msgExit)
+//
+// 	us := user.UsersFrom(c)
+// 	data, err := toUserTable(c, us)
+// 	if err != nil {
+// 		c.JSON(http.StatusInternalServerError, fmt.Sprintf("%v", err))
+// 		return
+// 	}
+// 	c.JSON(http.StatusOK, data)
+// }
+
 func (client Client) NewAction(c *gin.Context) {
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
+
 	cu := user.CurrentFrom(c)
 	if cu != nil {
-		log.Warningf("user %#v present, no need for new one", cu)
-		c.Redirect(http.StatusSeeOther, homePath)
+		sn.JErr(c, fmt.Errorf("user %s present, no need for new one: %w",
+			cu.Name, sn.ErrValidation))
 		return
 	}
 
 	session := sessions.Default(c)
 	token, ok := user.SessionTokenFrom(session)
 	if !ok {
-		log.Warningf("missing token")
-		c.Redirect(http.StatusSeeOther, homePath)
+		sn.JErr(c, fmt.Errorf("missing token."))
 		return
 	}
 
 	u := user.New(0)
 	u.Data = token.Data
 	u.Key = token.Key
+	u.EmailReminders = true
+	u.GravType = "monsterid"
 
-	c.HTML(http.StatusOK, "user/new", gin.H{
-		"Context": c,
-		"User":    u,
-	})
+	c.JSON(http.StatusOK, gin.H{"user": u})
 }
 
 func (client Client) Create(prefix string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		cu := user.CurrentFrom(c)
 		if cu != nil {
-			log.Warningf("user %#v present, no need for new one", cu)
-			c.Redirect(http.StatusSeeOther, homePath)
+			sn.JErr(c, fmt.Errorf("user %s present, no need for new one: %w",
+				cu.Name, sn.ErrValidation))
 			return
 		}
 
-		session := sessions.Default(c)
-		token, ok := user.SessionTokenFrom(session)
-		if !ok {
-			log.Warningf("missing token")
-			c.Redirect(http.StatusSeeOther, homePath)
+		u1 := user.New(0)
+		err := c.ShouldBind(u1)
+		if err != nil {
+			sn.JErr(c, err)
 			return
 		}
 
-		// // Fell through 'switch' thus err == user.ErrNotFound
 		u := user.New(0)
-		u.Name = strings.Split(c.PostForm("user-name"), "@")[0]
-		u.LCName = strings.ToLower(u.Name)
-		u.Email = token.Email
+		u.Name = u1.Name
+		u.LCName = strings.ToLower(u1.Name)
+		u.Email = u1.Email
+		u.EmailReminders = true
+		u.EmailNotifications = u1.EmailNotifications
+		u.GravType = u1.GravType
 
 		uniq, err := client.User.NameIsUnique(c, u.Name)
 		if err != nil {
-			log.Errorf(err.Error())
-			c.Redirect(http.StatusSeeOther, homePath)
+			sn.JErr(c, err)
 			return
 		}
 
 		if !uniq {
-			err = fmt.Errorf("%q is not a unique user name.", u.LCName)
-			restful.AddErrorf(c, err.Error())
-			log.Warningf(err.Error())
-			c.Redirect(http.StatusSeeOther, userNewPath)
+			sn.JErr(c, fmt.Errorf("%q is not a unique user name: %w",
+				u.LCName, sn.ErrValidation))
 			return
 		}
 
 		ks, err := client.DS.AllocateIDs(c, []*datastore.Key{u.Key})
 		if err != nil {
-			log.Errorf(err.Error())
-			c.Redirect(http.StatusSeeOther, homePath)
+			sn.JErr(c, err)
 			return
 		}
 
 		u.Key = ks[0]
+
+		session := sessions.Default(c)
+		token, ok := user.SessionTokenFrom(session)
+		if !ok {
+			sn.JErr(c, fmt.Errorf("missing token"))
+			return
+		}
 
 		oaid := user.GenOAuthID(token.Sub)
 		oa := user.NewOAuth(oaid)
@@ -214,20 +255,23 @@ func (client Client) Create(prefix string) gin.HandlerFunc {
 		})
 
 		if err != nil {
-			log.Errorf(err.Error())
-			c.Redirect(http.StatusSeeOther, homePath)
+			sn.JErr(c, err)
 			return
 		}
+
 		token.Data = u.Data
 		token.Loaded = true
 		token.Key = u.Key
+
 		err = token.SaveTo(session)
 		if err != nil {
-			log.Errorf(err.Error())
-			c.Redirect(http.StatusSeeOther, homePath)
+			sn.JErr(c, err)
 			return
 		}
-		c.Redirect(http.StatusSeeOther, showPath(prefix, u.ID()))
+		c.JSON(http.StatusOK, gin.H{
+			"user":    u,
+			"message": "account created for " + u.Name,
+		})
 	}
 }
 
@@ -235,49 +279,50 @@ func showPath(prefix string, id int64) string {
 	return fmt.Sprintf("%s/show/%d", prefix, id)
 }
 
-func (client Client) Update(c *gin.Context) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+func (client Client) Update(uidParam string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		log.Debugf(msgEnter)
+		defer log.Debugf(msgExit)
 
-	// Get Resource
-	uid, err := strconv.ParseInt(c.Param("uid"), 10, 64)
-	if err != nil {
-		log.Errorf(err.Error())
-		c.Redirect(http.StatusSeeOther, homePath)
-		return
+		uid, err := getUID(c, uidParam)
+		if err != nil {
+			sn.JErr(c, err)
+			return
+		}
+
+		u, err := client.User.Get(c, uid)
+		if err != nil {
+			sn.JErr(c, err)
+			return
+		}
+
+		err = client.User.Update(c, u)
+		if err != nil {
+			sn.JErr(c, err)
+			return
+		}
+
+		_, err = client.DS.Put(c, u.Key, u)
+		if err != nil {
+			sn.JErr(c, err)
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"user": u})
 	}
-	route := fmt.Sprintf("/user/show/%s", c.Param("uid"))
-
-	u := user.New(uid)
-	err = client.DS.Get(c, u.Key, u)
-	if err != nil {
-		log.Errorf(err.Error())
-		c.Redirect(http.StatusSeeOther, route)
-		return
-	}
-
-	err = client.User.Update(c, u)
-	if err != nil {
-		log.Errorf(err.Error())
-		c.Redirect(http.StatusSeeOther, route)
-		return
-	}
-
-	_, err = client.DS.Put(c, u.Key, u)
-	if err != nil {
-		log.Errorf(err.Error())
-	}
-
-	c.Redirect(http.StatusSeeOther, route)
 }
 
 func GamesIndex(c *gin.Context) {
-	log.Debugf("Entering")
-	defer log.Debugf("Exiting")
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 
 	if status := game.StatusFrom(c); status != game.NoStatus {
 		c.HTML(200, "shared/games_index", gin.H{})
 	} else {
 		c.HTML(200, "user/games_index", gin.H{})
 	}
+}
+
+func getUID(c *gin.Context, uidParam string) (int64, error) {
+	return strconv.ParseInt(c.Param(uidParam), 10, 64)
 }
