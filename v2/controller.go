@@ -308,6 +308,18 @@ func (client Client) Update(uidParam string) gin.HandlerFunc {
 			return
 		}
 
+		session := sessions.Default(c)
+		token, _ := user.SessionTokenFrom(session)
+		token.Data = u.Data
+		token.Loaded = true
+		token.Key = u.Key
+
+		err = token.SaveTo(session)
+		if err != nil {
+			sn.JErr(c, err)
+			return
+		}
+
 		c.JSON(http.StatusOK, gin.H{"user": u})
 	}
 }
