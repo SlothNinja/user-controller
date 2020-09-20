@@ -135,8 +135,8 @@ func (client Client) NewAction(c *gin.Context) {
 		return
 	}
 
-	u := user.New(c, token.ID())
-	u.Data = token.User.Data
+	u := user.New(c, token.Key.ID)
+	u.Data = token.Data
 
 	c.HTML(http.StatusOK, "user/new", gin.H{
 		"Context": c,
@@ -208,7 +208,7 @@ func (client Client) Create(prefix string) gin.HandlerFunc {
 			c.Redirect(http.StatusSeeOther, homePath)
 			return
 		}
-		token.User = u
+		token.Data = u.Data
 		token.Loaded = true
 		err = token.SaveTo(session)
 		if err != nil {
