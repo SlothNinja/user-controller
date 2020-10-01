@@ -2,7 +2,6 @@ package user_controller
 
 import (
 	"cloud.google.com/go/datastore"
-	"github.com/SlothNinja/game"
 	"github.com/SlothNinja/rating/v2"
 	gtype "github.com/SlothNinja/type"
 	stats "github.com/SlothNinja/user-stats/v2"
@@ -21,7 +20,7 @@ type Client struct {
 	User   user.Client
 	Stats  stats.Client
 	Rating rating.Client
-	Game   game.Client
+	// Game   game.Client
 }
 
 func NewClient(dsClient *datastore.Client) Client {
@@ -30,7 +29,7 @@ func NewClient(dsClient *datastore.Client) Client {
 		User:   user.NewClient(dsClient),
 		Stats:  stats.NewClient(dsClient),
 		Rating: rating.NewClient(dsClient),
-		Game:   game.NewClient(dsClient),
+		// Game:   game.NewClient(dsClient),
 	}
 }
 
@@ -68,18 +67,18 @@ func (client Client) AddRoutes(prefix string, engine *gin.Engine) *gin.Engine {
 	)
 
 	// User Games
-	g1.POST("show/:uid/games/json",
-		gtype.SetTypes(),
-		client.Game.GetFiltered(gtype.All),
-		client.Game.JSONIndexAction,
-	)
+	// g1.POST("show/:uid/games/json",
+	// 	gtype.SetTypes(),
+	// 	client.Game.GetFiltered(gtype.All),
+	// 	client.Game.JSONIndexAction,
+	// )
 
-	g1.POST("edit/:uid/games/json",
-		// user.RequireLogin(),
-		gtype.SetTypes(),
-		client.Game.GetFiltered(gtype.All),
-		client.Game.JSONIndexAction,
-	)
+	// g1.POST("edit/:uid/games/json",
+	// 	// user.RequireLogin(),
+	// 	gtype.SetTypes(),
+	// 	client.Game.GetFiltered(gtype.All),
+	// 	client.Game.JSONIndexAction,
+	// )
 
 	g1.GET("as/:uid",
 		user.RequireAdmin,

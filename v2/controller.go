@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"cloud.google.com/go/datastore"
-	"github.com/SlothNinja/game"
 	"github.com/SlothNinja/log"
 	"github.com/SlothNinja/sn/v2"
 	stats "github.com/SlothNinja/user-stats/v2"
@@ -324,16 +323,16 @@ func (client Client) Update(uidParam string) gin.HandlerFunc {
 	}
 }
 
-func GamesIndex(c *gin.Context) {
-	log.Debugf(msgEnter)
-	defer log.Debugf(msgExit)
-
-	if status := game.StatusFrom(c); status != game.NoStatus {
-		c.HTML(200, "shared/games_index", gin.H{})
-	} else {
-		c.HTML(200, "user/games_index", gin.H{})
-	}
-}
+// func GamesIndex(c *gin.Context) {
+// 	log.Debugf(msgEnter)
+// 	defer log.Debugf(msgExit)
+//
+// 	if status := game.StatusFrom(c); status != game.NoStatus {
+// 		c.HTML(200, "shared/games_index", gin.H{})
+// 	} else {
+// 		c.HTML(200, "user/games_index", gin.H{})
+// 	}
+// }
 
 func getUID(c *gin.Context, uidParam string) (int64, error) {
 	return strconv.ParseInt(c.Param(uidParam), 10, 64)
