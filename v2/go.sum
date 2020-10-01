@@ -91,10 +91,10 @@ github.com/SlothNinja/sn/v2 v2.0.0-alpha.10 h1:Iw4kRgsCkNdbPdZP41+0cGkBfqEsP2Hac
 github.com/SlothNinja/sn/v2 v2.0.0-alpha.10/go.mod h1:RihWh9ZINoK3EnkZ3O9sfQKBGA9+08hPueQk9rdyhB4=
 github.com/SlothNinja/type v1.0.0 h1:5IwyaRDB9Cov+ZXVtVAC2p2uWxDd1FpZQXXyTYh83pw=
 github.com/SlothNinja/type v1.0.0/go.mod h1:hCF5nTtjt9h1w92eVzPPrrNLyrsRXGiKSlZZylTmDlQ=
+github.com/SlothNinja/type v1.0.1 h1:O76sTnIRNE/ZMxZaMVEwYN+jwKg16G459k1ogsUriUE=
+github.com/SlothNinja/type v1.0.1/go.mod h1:mMCQiVmqWL9ZIHH0XTddJYLRj7JO5vAaYqwfpfjp/x8=
 github.com/SlothNinja/user v1.0.0 h1:6re2MkV/JbIKgEiGzFIh+KDGMjn6+JPEA3keQhUkU58=
 github.com/SlothNinja/user v1.0.0/go.mod h1:ZMssQwp+Fck2BjbIhU3mQBmKJ0NHmG15BS0+9tKnS1c=
-github.com/SlothNinja/user v1.0.1 h1:YVjbxpDygp/UWNcX4et22m9DeIUjl8dpvDeBUMfsv/g=
-github.com/SlothNinja/user v1.0.1/go.mod h1:NajJF2dqYhxWZt9mCjZwA7aUjXHCeXgHBEz79B3csI8=
 github.com/SlothNinja/user-stats v1.0.0 h1:PFfIvx0aPGb6iId9XlrEUBDUcv2qgrjihRZ+Ybgv7II=
 github.com/SlothNinja/user-stats v1.0.0/go.mod h1:7tq555rXlrYhmN2KL6eOcrgOB5mKazhowqvD+bvw1f4=
 github.com/SlothNinja/user-stats/v2 v2.0.0-alpha.1 h1:7DJAJgPx80Hdfpo96Wtn2KbEfhY04pYwKmFDPN0hY18=

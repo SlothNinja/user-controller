@@ -3,7 +3,6 @@ package user_controller
 import (
 	"cloud.google.com/go/datastore"
 	"github.com/SlothNinja/rating/v2"
-	gtype "github.com/SlothNinja/type"
 	stats "github.com/SlothNinja/user-stats/v2"
 	"github.com/SlothNinja/user/v2"
 	"github.com/gin-gonic/gin"
@@ -99,7 +98,7 @@ func (client Client) AddRoutes(prefix string, engine *gin.Engine) *gin.Engine {
 	// Index
 	g2.GET("",
 		user.RequireAdmin,
-		gtype.SetTypes(),
+		// gtype.SetTypes(),
 		client.Index,
 	)
 

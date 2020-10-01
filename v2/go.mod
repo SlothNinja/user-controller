@@ -8,17 +8,12 @@ require (
 	github.com/SlothNinja/log v0.0.2
 	github.com/SlothNinja/rating/v2 v2.0.0-alpha.3
 	github.com/SlothNinja/sn/v2 v2.0.0-alpha.10
-	github.com/SlothNinja/type v1.0.0
-	github.com/SlothNinja/user v1.0.1 // indirect
+	github.com/SlothNinja/type v1.0.1
 	github.com/SlothNinja/user-stats/v2 v2.0.0-alpha.1
 	github.com/SlothNinja/user/v2 v2.0.0-alpha.13
 	github.com/gin-contrib/sessions v0.0.3
 	github.com/gin-gonic/gin v1.6.3
-	github.com/go-playground/validator/v10 v10.4.0 // indirect
-	github.com/ugorji/go v1.1.9 // indirect
-	golang.org/x/crypto v0.0.0-20201001193750-eb9a90e9f9cb // indirect
 	golang.org/x/net v0.0.0-20200930145003-4acb6c075d10 // indirect
-	golang.org/x/sys v0.0.0-20200930185726-fdedc70b468f // indirect
 	golang.org/x/tools v0.0.0-20201001230009-b5b87423c93b // indirect
 	google.golang.org/genproto v0.0.0-20201001141541-efaab9d3c4f7 // indirect
 )
