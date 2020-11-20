@@ -3,7 +3,6 @@ package user_controller
 import (
 	"cloud.google.com/go/datastore"
 	"github.com/SlothNinja/game"
-	"github.com/SlothNinja/rating"
 	gtype "github.com/SlothNinja/type"
 	"github.com/SlothNinja/user"
 	stats "github.com/SlothNinja/user-stats"
@@ -17,20 +16,18 @@ const (
 )
 
 type Client struct {
-	DS     *datastore.Client
-	User   user.Client
-	Stats  stats.Client
-	Rating rating.Client
-	Game   game.Client
+	DS    *datastore.Client
+	User  user.Client
+	Stats stats.Client
+	Game  game.Client
 }
 
 func NewClient(dsClient *datastore.Client, userClient *datastore.Client) Client {
 	return Client{
-		DS:     dsClient,
-		User:   user.NewClient(dsClient),
-		Stats:  stats.NewClient(dsClient),
-		Rating: rating.NewClient(userClient, dsClient),
-		Game:   game.NewClient(dsClient),
+		DS:    dsClient,
+		User:  user.NewClient(dsClient),
+		Stats: stats.NewClient(dsClient),
+		Game:  game.NewClient(dsClient),
 	}
 }
 
@@ -72,18 +69,6 @@ func (client Client) AddRoutes(prefix string, engine *gin.Engine) *gin.Engine {
 		// user.RequireLogin(),
 		client.User.Fetch,
 		client.Update,
-	)
-
-	// User Ratings
-	g1.POST("show/:uid/ratings/json",
-		client.User.Fetch,
-		client.Rating.JSONIndexAction,
-	)
-
-	g1.POST("edit/:uid/ratings/json",
-		// user.RequireLogin(),
-		client.User.Fetch,
-		client.Rating.JSONIndexAction,
 	)
 
 	// User Games
