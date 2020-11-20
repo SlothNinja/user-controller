@@ -24,14 +24,18 @@ type Client struct {
 	Game   game.Client
 }
 
-func NewClient(dsClient *datastore.Client) Client {
+func NewClient(dsClient *datastore.Client, userClient *datastore.Client) Client {
 	return Client{
 		DS:     dsClient,
 		User:   user.NewClient(dsClient),
 		Stats:  stats.NewClient(dsClient),
-		Rating: rating.NewClient(dsClient),
+		Rating: rating.NewClient(userClient, dsClient),
 		Game:   game.NewClient(dsClient),
 	}
+}
+
+func userFrom(c *gin.Context) (*user.User, error) {
+	return user.From(c), nil
 }
 
 func (client Client) AddRoutes(prefix string, engine *gin.Engine) *gin.Engine {
@@ -39,7 +43,6 @@ func (client Client) AddRoutes(prefix string, engine *gin.Engine) *gin.Engine {
 	g1 := engine.Group(prefix)
 	g1.GET("/new",
 		// user.RequireLogin(),
-		gtype.SetTypes(),
 		client.NewAction,
 	)
 
@@ -52,8 +55,7 @@ func (client Client) AddRoutes(prefix string, engine *gin.Engine) *gin.Engine {
 	// Show User
 	g1.GET("show/:uid",
 		client.User.Fetch,
-		client.Stats.Fetch(user.From),
-		gtype.SetTypes(),
+		client.Stats.Fetch(userFrom),
 		client.Show,
 	)
 
@@ -61,8 +63,7 @@ func (client Client) AddRoutes(prefix string, engine *gin.Engine) *gin.Engine {
 	g1.GET("edit/:uid",
 		// user.RequireLogin(),
 		client.User.Fetch,
-		client.Stats.Fetch(user.From),
-		gtype.SetTypes(),
+		client.Stats.Fetch(userFrom),
 		client.Edit,
 	)
 
@@ -70,7 +71,6 @@ func (client Client) AddRoutes(prefix string, engine *gin.Engine) *gin.Engine {
 	g1.POST("update/:uid",
 		// user.RequireLogin(),
 		client.User.Fetch,
-		gtype.SetTypes(),
 		client.Update,
 	)
 
@@ -88,14 +88,12 @@ func (client Client) AddRoutes(prefix string, engine *gin.Engine) *gin.Engine {
 
 	// User Games
 	g1.POST("show/:uid/games/json",
-		gtype.SetTypes(),
 		client.Game.GetFiltered(gtype.All),
 		client.Game.JSONIndexAction,
 	)
 
 	g1.POST("edit/:uid/games/json",
 		// user.RequireLogin(),
-		gtype.SetTypes(),
 		client.Game.GetFiltered(gtype.All),
 		client.Game.JSONIndexAction,
 	)
@@ -117,14 +115,12 @@ func (client Client) AddRoutes(prefix string, engine *gin.Engine) *gin.Engine {
 	// Index
 	g2.GET("",
 		user.RequireAdmin,
-		gtype.SetTypes(),
 		client.Index,
 	)
 
 	// json data for Index
 	g2.POST("/json",
 		user.RequireAdmin,
-		gtype.SetTypes(),
 		client.User.FetchAll,
 		client.JSON,
 	)

@@ -25,18 +25,26 @@ const (
 )
 
 func (client Client) Index(c *gin.Context) {
+	cu, err := user.CurrentFrom(c)
+	if err != nil {
+		log.Debugf(err.Error())
+	}
 	c.HTML(http.StatusOK, "user/index", gin.H{
 		"Context": c,
-		"CUser":   user.CurrentFrom(c),
+		"CUser":   cu,
 	})
 }
 
 func (client Client) Show(c *gin.Context) {
 	u := user.From(c)
+	cu, err := user.CurrentFrom(c)
+	if err != nil {
+		log.Debugf(err.Error())
+	}
 	c.HTML(http.StatusOK, "user/show", gin.H{
 		"Context": c,
 		"User":    u,
-		"CUser":   user.CurrentFrom(c),
+		"CUser":   cu,
 		"IsAdmin": user.IsAdmin(c),
 		"Stats":   stats.Fetched(c),
 	})
@@ -44,10 +52,15 @@ func (client Client) Show(c *gin.Context) {
 
 func (client Client) Edit(c *gin.Context) {
 	u := user.From(c)
+	cu, err := user.CurrentFrom(c)
+	if err != nil {
+		log.Debugf(err.Error())
+	}
+
 	c.HTML(http.StatusOK, "user/edit", gin.H{
 		"Context": c,
 		"User":    u,
-		"CUser":   user.CurrentFrom(c),
+		"CUser":   cu,
 		"IsAdmin": user.IsAdmin(c),
 		"Stats":   stats.Fetched(c),
 	})
@@ -120,7 +133,10 @@ func (client Client) JSON(c *gin.Context) {
 }
 
 func (client Client) NewAction(c *gin.Context) {
-	cu := user.CurrentFrom(c)
+	cu, err := user.CurrentFrom(c)
+	if err != nil {
+		log.Debugf(err.Error())
+	}
 	if cu != nil {
 		log.Warningf("user %#v present, no need for new one", cu)
 		c.Redirect(http.StatusSeeOther, homePath)
@@ -146,7 +162,11 @@ func (client Client) NewAction(c *gin.Context) {
 
 func (client Client) Create(prefix string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		cu := user.CurrentFrom(c)
+		cu, err := user.CurrentFrom(c)
+		if err != nil {
+			log.Debugf(err.Error())
+		}
+
 		if cu != nil {
 			log.Warningf("user %#v present, no need for new one", cu)
 			c.Redirect(http.StatusSeeOther, homePath)
