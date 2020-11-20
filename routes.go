@@ -22,7 +22,7 @@ type Client struct {
 	Game  game.Client
 }
 
-func NewClient(dsClient *datastore.Client, userClient *datastore.Client) Client {
+func NewClient(dsClient *datastore.Client) Client {
 	return Client{
 		DS:    dsClient,
 		User:  user.NewClient(dsClient),
