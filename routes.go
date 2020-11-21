@@ -3,16 +3,11 @@ package user_controller
 import (
 	"cloud.google.com/go/datastore"
 	"github.com/SlothNinja/game"
+	"github.com/SlothNinja/log"
 	gtype "github.com/SlothNinja/type"
 	"github.com/SlothNinja/user"
 	stats "github.com/SlothNinja/user-stats"
 	"github.com/gin-gonic/gin"
-)
-
-const (
-	authPath   = "auth"
-	loginPath  = "login"
-	logoutPath = "logout"
 )
 
 type Client struct {
@@ -23,6 +18,8 @@ type Client struct {
 }
 
 func NewClient(dsClient *datastore.Client) Client {
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
 	return Client{
 		DS:    dsClient,
 		User:  user.NewClient(dsClient),
@@ -35,80 +32,56 @@ func userFrom(c *gin.Context) (*user.User, error) {
 	return user.From(c), nil
 }
 
-func (client Client) AddRoutes(prefix string, engine *gin.Engine) *gin.Engine {
-	// User Group
-	g1 := engine.Group(prefix)
-	g1.GET("/new",
-		// user.RequireLogin(),
-		client.NewAction,
-	)
+func (client Client) AddRoutes(engine *gin.Engine) *gin.Engine {
+	log.Debugf(msgEnter)
+	defer log.Debugf(msgExit)
+
+	// New
+	engine.GET("new", client.NewAction)
 
 	// Create
-	g1.POST("",
-		// user.RequireLogin(),
-		client.Create(prefix),
-	)
+	engine.PUT("new", client.Create)
 
-	// Show User
-	g1.GET("show/:uid",
-		client.User.Fetch,
-		client.Stats.Fetch(userFrom),
-		client.Show,
-	)
+	// Update
+	engine.PUT("update/:uid", client.Update("uid"))
 
-	// Edit User
-	g1.GET("edit/:uid",
-		// user.RequireLogin(),
-		client.User.Fetch,
-		client.Stats.Fetch(userFrom),
-		client.Edit,
-	)
-
-	// Update User
-	g1.POST("update/:uid",
-		// user.RequireLogin(),
-		client.User.Fetch,
-		client.Update,
-	)
+	// Get
+	engine.GET("json/:uid", client.JSON("uid"))
 
 	// User Games
-	g1.POST("show/:uid/games/json",
+	engine.POST("show/:uid/games/json",
 		client.Game.GetFiltered(gtype.All),
 		client.Game.JSONIndexAction,
 	)
 
-	g1.POST("edit/:uid/games/json",
+	engine.POST("edit/:uid/games/json",
 		// user.RequireLogin(),
 		client.Game.GetFiltered(gtype.All),
 		client.Game.JSONIndexAction,
 	)
 
-	g1.GET("as/:uid",
+	engine.GET("as/:uid",
 		user.RequireAdmin,
 		client.User.As,
 	)
 
-	g1.GET(loginPath, user.Login("/"+prefix+"/"+authPath))
+	engine.GET("current", client.Current)
 
-	g1.GET(logoutPath, user.Logout)
+	engine.GET("login", user.Login("auth"))
 
-	g1.GET(authPath, client.User.Auth("/"+prefix+"/"+authPath))
+	engine.GET("logout", user.Logout)
 
-	// Users group
-	g2 := engine.Group(prefix + "s")
+	engine.GET("auth", client.User.Auth("auth"))
 
 	// Index
-	g2.GET("",
-		user.RequireAdmin,
-		client.Index,
-	)
+	engine.GET("index", client.Index)
 
-	// json data for Index
-	g2.POST("/json",
-		user.RequireAdmin,
-		client.User.FetchAll,
-		client.JSON,
-	)
+	// // json data for Index
+	// g2.POST("/json",
+	// 	user.RequireAdmin,
+	// 	client.User.FetchAll,
+	// 	client.JSON,
+	// )
 
 	return engine
 }
