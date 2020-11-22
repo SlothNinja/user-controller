@@ -76,7 +76,7 @@ func toUserTable(c *gin.Context, us []*user.User) (*jUserIndex, error) {
 			GoogleID: u.GoogleID,
 			Name:     u.Name,
 			Email:    u.Email,
-			Gravatar: user.Gravatar(u),
+			Gravatar: user.Gravatar(u, "80"),
 			Joined:   u.CreatedAt,
 			Updated:  u.UpdatedAt,
 		}
