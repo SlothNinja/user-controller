@@ -129,7 +129,14 @@ func (client Client) NewAction(c *gin.Context) {
 	}
 
 	cu.EmailReminders = true
+	cu.EmailNotifications = true
 	cu.GravType = "monsterid"
+	hash, err := user.EmailHash(cu.Email)
+	if err != nil {
+		log.Warningf("email hash error: %v", err)
+		c.Redirect(http.StatusSeeOther, homePath)
+	}
+	cu.EmailHash = hash
 
 	c.JSON(http.StatusOK, gin.H{"user": cu})
 }
