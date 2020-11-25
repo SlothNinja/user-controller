@@ -85,6 +85,8 @@ github.com/SlothNinja/user v1.0.2 h1:BR/tTkD0vwD8dybQbN78hjal9D1XyAWPQZuXzibHfyA
 github.com/SlothNinja/user v1.0.2/go.mod h1:f7DpM0j2bxY5SL4hLPZ+nic5RVGYry2yTNhsSyew7po=
 github.com/SlothNinja/user v1.0.6 h1:Zv3sHPsT6lHIbdH6W3UDwvrkmv4kKN2zfcV7P4MBZsk=
 github.com/SlothNinja/user v1.0.6/go.mod h1:uk0GbfFclnGiQlSDkqLukCiLNdmXb28MeSzwtmF/2KY=
+github.com/SlothNinja/user v1.0.7 h1:hIAjkT2aQqGOOLgt+F+CaCQFijL5sOY2WVbZ5ucKSJ0=
+github.com/SlothNinja/user v1.0.7/go.mod h1:uk0GbfFclnGiQlSDkqLukCiLNdmXb28MeSzwtmF/2KY=
 github.com/SlothNinja/user-stats v1.0.1 h1:3UZAC2iM4VXvLYPvXpNI4GsJxg6H/qASYx+FNG+tLVc=
 github.com/SlothNinja/user-stats v1.0.1/go.mod h1:GoFmfOLHX0DzXoupmfle6tRzxUd3VoQ0G2uCAVZCMnA=
 github.com/boj/redistore v0.0.0-20180917114910-cd5dcc76aeff/go.mod h1:+RTT1BOk5P97fT2CiHkbFQwkK3mjsFAP6zCYV2aXtjw=
