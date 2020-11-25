@@ -8,7 +8,7 @@ require (
 	github.com/SlothNinja/log v0.0.2
 	github.com/SlothNinja/sn/v2 v2.0.0-alpha-13
 	github.com/SlothNinja/type v1.0.1
-	github.com/SlothNinja/user v1.0.7
+	github.com/SlothNinja/user v1.0.8
 	github.com/SlothNinja/user-stats v1.0.1
 	github.com/gin-contrib/sessions v0.0.3
 	github.com/gin-gonic/gin v1.6.3
