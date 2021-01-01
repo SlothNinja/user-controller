@@ -8,6 +8,7 @@ import (
 	"github.com/SlothNinja/user"
 	stats "github.com/SlothNinja/user-stats"
 	"github.com/gin-gonic/gin"
+	"github.com/patrickmn/go-cache"
 )
 
 type Client struct {
@@ -17,14 +18,15 @@ type Client struct {
 	Game  game.Client
 }
 
-func NewClient(dsClient *datastore.Client) Client {
+func NewClient(dsClient *datastore.Client, mcache *cache.Cache) Client {
 	log.Debugf(msgEnter)
 	defer log.Debugf(msgExit)
+	userClient := user.NewClient(dsClient, mcache)
 	return Client{
 		DS:    dsClient,
-		User:  user.NewClient(dsClient),
+		User:  userClient,
 		Stats: stats.NewClient(dsClient),
-		Game:  game.NewClient(dsClient),
+		Game:  game.NewClient(userClient, dsClient),
 	}
 }
 
@@ -60,10 +62,7 @@ func (client Client) AddRoutes(engine *gin.Engine) *gin.Engine {
 		client.Game.JSONIndexAction,
 	)
 
-	engine.GET("as/:uid",
-		user.RequireAdmin,
-		client.User.As,
-	)
+	engine.GET("as/:uid", client.User.As)
 
 	engine.GET("current", client.Current)
 

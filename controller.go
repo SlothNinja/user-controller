@@ -10,7 +10,7 @@ import (
 	"cloud.google.com/go/datastore"
 	"github.com/SlothNinja/game"
 	"github.com/SlothNinja/log"
-	"github.com/SlothNinja/sn/v2"
+	"github.com/SlothNinja/sn"
 	"github.com/SlothNinja/user"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -27,7 +27,7 @@ const (
 func (client Client) Index(c *gin.Context) {
 	log.Debugf(msgEnter)
 	defer log.Debugf(msgExit)
-	cu, err := user.CurrentFrom(c)
+	cu, err := client.User.Current(c)
 	if err != nil {
 		log.Debugf(err.Error())
 	}
@@ -117,15 +117,12 @@ func (client Client) JSON(uidParam string) gin.HandlerFunc {
 func (client Client) NewAction(c *gin.Context) {
 	log.Debugf(msgEnter)
 	defer log.Debugf(msgExit)
-	cu, err := user.CurrentFrom(c)
-	if err != nil {
-		log.Debugf(err.Error())
-	}
 
-	if cu != nil && cu.ID() != 0 {
-		log.Warningf("user present, no need for new one.\n key: %#v\n user %#v\n", cu.Key, cu)
+	session := sessions.Default(c)
+	cu, err := user.NewFrom(session)
+	if err != nil {
+		log.Errorf(err.Error())
 		c.Redirect(http.StatusSeeOther, homePath)
-		return
 	}
 
 	cu.EmailReminders = true
@@ -153,22 +150,27 @@ func (client Client) Create(c *gin.Context) {
 		return
 	}
 
-	if token.Key.ID != 0 {
+	if token.ID != 0 {
 		log.Warningf("user present, no need for new one. token: %#v", token)
 		c.Redirect(http.StatusSeeOther, homePath)
 		return
 	}
 
 	u := user.New(0)
-	u.Data = token.Data
-
-	err := client.User.Update(c, u)
+	err := c.ShouldBind(u)
 	if err != nil {
 		sn.JErr(c, err)
 		return
 	}
 
-	ks, err := client.DS.AllocateIDs(c, []*datastore.Key{u.Key})
+	log.Debugf("u: %#v", u)
+	err = client.User.Update(c, u, u, u)
+	if err != nil {
+		sn.JErr(c, err)
+		return
+	}
+
+	ks, err := client.User.AllocateIDs(c, []*datastore.Key{u.Key})
 	if err != nil {
 		log.Errorf(err.Error())
 		c.Redirect(http.StatusSeeOther, homePath)
@@ -183,7 +185,7 @@ func (client Client) Create(c *gin.Context) {
 	oa := user.NewOAuth(oaid)
 	oa.ID = u.ID()
 	oa.UpdatedAt = time.Now()
-	_, err = client.DS.RunInTransaction(c, func(tx *datastore.Transaction) error {
+	_, err = client.User.RunInTransaction(c, func(tx *datastore.Transaction) error {
 		ks := []*datastore.Key{oa.Key, u.Key}
 		es := []interface{}{&oa, u}
 		_, err := tx.PutMulti(ks, es)
@@ -197,8 +199,7 @@ func (client Client) Create(c *gin.Context) {
 		return
 	}
 
-	token.Key = u.Key
-	token.Data = u.Data
+	token.ID = u.Key.ID
 
 	err = token.SaveTo(session)
 	if err != nil {
@@ -230,13 +231,26 @@ func (client Client) Update(uidParam string) gin.HandlerFunc {
 			return
 		}
 
-		err = client.User.Update(c, u)
+		cu, err := client.User.Current(c)
 		if err != nil {
 			sn.JErr(c, err)
 			return
 		}
 
-		_, err = client.DS.Put(c, u.Key, u)
+		obj := user.New(0)
+		err = c.ShouldBind(obj)
+		if err != nil {
+			sn.JErr(c, err)
+			return
+		}
+
+		err = client.User.Update(c, cu, u, obj)
+		if err != nil {
+			sn.JErr(c, err)
+			return
+		}
+
+		_, err = client.User.Put(c, u.Key, u)
 		if err != nil {
 			sn.JErr(c, err)
 			return
@@ -244,8 +258,7 @@ func (client Client) Update(uidParam string) gin.HandlerFunc {
 
 		session := sessions.Default(c)
 		token, _ := user.SessionTokenFrom(session)
-		token.Data = u.Data
-		token.Key = u.Key
+		token.ID = u.Key.ID
 
 		err = token.SaveTo(session)
 		if err != nil {
