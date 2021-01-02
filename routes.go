@@ -25,7 +25,7 @@ func NewClient(dsClient *datastore.Client, mcache *cache.Cache) Client {
 	return Client{
 		DS:    dsClient,
 		User:  userClient,
-		Stats: stats.NewClient(dsClient),
+		Stats: stats.NewClient(userClient, dsClient),
 		Game:  game.NewClient(userClient, dsClient),
 	}
 }
