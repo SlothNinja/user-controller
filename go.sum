@@ -92,12 +92,12 @@ github.com/SlothNinja/user v1.0.6/go.mod h1:uk0GbfFclnGiQlSDkqLukCiLNdmXb28MeSzw
 github.com/SlothNinja/user v1.0.9/go.mod h1:uk0GbfFclnGiQlSDkqLukCiLNdmXb28MeSzwtmF/2KY=
 github.com/SlothNinja/user v1.0.10 h1:ZOGy2FqkawQcFH0u0w9BPmCijDKQyGYygTIn/l9AUTA=
 github.com/SlothNinja/user v1.0.10/go.mod h1:il7/nZtXMCZ/+q4IHCtedmVgwJoy0heFHn+ixMuBHLc=
-github.com/SlothNinja/user v1.0.12 h1:4BYOVdyQdlKf6WbHn/NxOFT+UEXcQvNpfXL61RmR1VU=
-github.com/SlothNinja/user v1.0.12/go.mod h1:il7/nZtXMCZ/+q4IHCtedmVgwJoy0heFHn+ixMuBHLc=
+github.com/SlothNinja/user v1.0.13 h1:Cv5SApXd+mmIHZHo4K4Z+G4MVapUJgdIoKOSWuDz9JU=
+github.com/SlothNinja/user v1.0.13/go.mod h1:il7/nZtXMCZ/+q4IHCtedmVgwJoy0heFHn+ixMuBHLc=
 github.com/SlothNinja/user-stats v1.0.1 h1:3UZAC2iM4VXvLYPvXpNI4GsJxg6H/qASYx+FNG+tLVc=
 github.com/SlothNinja/user-stats v1.0.1/go.mod h1:GoFmfOLHX0DzXoupmfle6tRzxUd3VoQ0G2uCAVZCMnA=
-github.com/SlothNinja/user-stats v1.0.3 h1:Ghlpepqr5gnWTAfsrKjEKX7D5wn5w94tsY0Lx5231rc=
-github.com/SlothNinja/user-stats v1.0.3/go.mod h1:QvrVB3itBhlEfQ5gWTs79n05I+jyKaOQlvWGGiNpiMU=
+github.com/SlothNinja/user-stats v1.0.4 h1:X/EnE1l9E9FRTYBJnYcfRyhcV4VpEHfIeEimrW7pzXw=
+github.com/SlothNinja/user-stats v1.0.4/go.mod h1:52UfAzdZnvmwls+TmdqVtYU07BObpaOEsajSe3he81g=
 github.com/boj/redistore v0.0.0-20180917114910-cd5dcc76aeff/go.mod h1:+RTT1BOk5P97fT2CiHkbFQwkK3mjsFAP6zCYV2aXtjw=
 github.com/bradfitz/gomemcache v0.0.0-20190329173943-551aad21a668/go.mod h1:H0wQNHz2YrLsuXOZozoeDmnHXkNCRmMW0gwFWDfEZDA=
 github.com/bradleypeabody/gorilla-sessions-memcache v0.0.0-20181103040241-659414f458e1/go.mod h1:dkChI7Tbtx7H1Tj7TqGSZMOeGpMP5gLHtjroHd4agiI=
