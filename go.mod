@@ -9,8 +9,8 @@ require (
 	github.com/SlothNinja/rating v1.0.5 // indirect
 	github.com/SlothNinja/sn v1.0.1
 	github.com/SlothNinja/type v1.0.1
-	github.com/SlothNinja/user v1.0.13
-	github.com/SlothNinja/user-stats v1.0.4
+	github.com/SlothNinja/user v1.0.14
+	github.com/SlothNinja/user-stats v1.0.5
 	github.com/gin-contrib/sessions v0.0.3
 	github.com/gin-gonic/gin v1.6.3
 	github.com/patrickmn/go-cache v2.1.0+incompatible
