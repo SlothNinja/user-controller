@@ -9,7 +9,6 @@ import (
 
 	"cloud.google.com/go/datastore"
 	"github.com/SlothNinja/game"
-	"github.com/SlothNinja/log"
 	"github.com/SlothNinja/sn"
 	"github.com/SlothNinja/user"
 	"github.com/gin-contrib/sessions"
@@ -25,11 +24,11 @@ const (
 )
 
 func (client Client) Index(c *gin.Context) {
-	log.Debugf(msgEnter)
-	defer log.Debugf(msgExit)
+	client.Log.Debugf(msgEnter)
+	defer client.Log.Debugf(msgExit)
 	cu, err := client.User.Current(c)
 	if err != nil {
-		log.Debugf(err.Error())
+		client.Log.Debugf(err.Error())
 	}
 	c.HTML(http.StatusOK, "user/index", gin.H{
 		"Context": c,
@@ -61,9 +60,6 @@ type jUser struct {
 }
 
 func toUserTable(c *gin.Context, us []*user.User) (*jUserIndex, error) {
-	log.Debugf(msgEnter)
-	defer log.Debugf(msgExit)
-
 	table := new(jUserIndex)
 	l := len(us)
 	table.Data = make([]*jUser, l)
@@ -95,8 +91,8 @@ func toUserTable(c *gin.Context, us []*user.User) (*jUserIndex, error) {
 
 func (client Client) JSON(uidParam string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		log.Debugf(msgEnter)
-		defer log.Debugf(msgExit)
+		client.Log.Debugf(msgEnter)
+		defer client.Log.Debugf(msgExit)
 
 		uid, err := getUID(c, uidParam)
 		if err != nil {
@@ -115,13 +111,13 @@ func (client Client) JSON(uidParam string) gin.HandlerFunc {
 }
 
 func (client Client) NewAction(c *gin.Context) {
-	log.Debugf(msgEnter)
-	defer log.Debugf(msgExit)
+	client.Log.Debugf(msgEnter)
+	defer client.Log.Debugf(msgExit)
 
 	session := sessions.Default(c)
 	cu, err := user.NewFrom(session)
 	if err != nil {
-		log.Errorf(err.Error())
+		client.Log.Errorf(err.Error())
 		c.Redirect(http.StatusSeeOther, homePath)
 	}
 
@@ -130,7 +126,7 @@ func (client Client) NewAction(c *gin.Context) {
 	cu.GravType = "monsterid"
 	hash, err := user.EmailHash(cu.Email)
 	if err != nil {
-		log.Warningf("email hash error: %v", err)
+		client.Log.Warningf("email hash error: %v", err)
 		c.Redirect(http.StatusSeeOther, homePath)
 	}
 	cu.EmailHash = hash
@@ -139,19 +135,19 @@ func (client Client) NewAction(c *gin.Context) {
 }
 
 func (client Client) Create(c *gin.Context) {
-	log.Debugf(msgEnter)
-	defer log.Debugf(msgExit)
+	client.Log.Debugf(msgEnter)
+	defer client.Log.Debugf(msgExit)
 
 	session := sessions.Default(c)
 	token, ok := user.SessionTokenFrom(session)
 	if !ok {
-		log.Warningf("missing token")
+		client.Log.Warningf("missing token")
 		c.Redirect(http.StatusSeeOther, homePath)
 		return
 	}
 
 	if token.ID != 0 {
-		log.Warningf("user present, no need for new one. token: %#v", token)
+		client.Log.Warningf("user present, no need for new one. token: %#v", token)
 		c.Redirect(http.StatusSeeOther, homePath)
 		return
 	}
@@ -163,7 +159,7 @@ func (client Client) Create(c *gin.Context) {
 		return
 	}
 
-	log.Debugf("u: %#v", u)
+	client.Log.Debugf("u: %#v", u)
 	err = client.User.Update(c, u, u, u)
 	if err != nil {
 		sn.JErr(c, err)
@@ -172,14 +168,14 @@ func (client Client) Create(c *gin.Context) {
 
 	ks, err := client.User.AllocateIDs(c, []*datastore.Key{u.Key})
 	if err != nil {
-		log.Errorf(err.Error())
+		client.Log.Errorf(err.Error())
 		c.Redirect(http.StatusSeeOther, homePath)
 		return
 	}
 
 	u.Key = ks[0]
 	u.LCName = strings.ToLower(u.Name)
-	log.Debugf("u.Key: %#v", u.Key)
+	client.Log.Debugf("u.Key: %#v", u.Key)
 
 	oaid := user.GenOAuthID(token.Sub)
 	oa := user.NewOAuth(oaid)
@@ -194,7 +190,7 @@ func (client Client) Create(c *gin.Context) {
 	})
 
 	if err != nil {
-		log.Errorf(err.Error())
+		client.Log.Errorf(err.Error())
 		c.Redirect(http.StatusSeeOther, homePath)
 		return
 	}
@@ -203,7 +199,7 @@ func (client Client) Create(c *gin.Context) {
 
 	err = token.SaveTo(session)
 	if err != nil {
-		log.Errorf(err.Error())
+		client.Log.Errorf(err.Error())
 		c.Redirect(http.StatusSeeOther, homePath)
 		return
 	}
@@ -216,8 +212,8 @@ func (client Client) Create(c *gin.Context) {
 
 func (client Client) Update(uidParam string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		log.Debugf(msgEnter)
-		defer log.Debugf(msgExit)
+		client.Log.Debugf(msgEnter)
+		defer client.Log.Debugf(msgExit)
 
 		uid, err := getUID(c, uidParam)
 		if err != nil {
@@ -271,9 +267,6 @@ func (client Client) Update(uidParam string) gin.HandlerFunc {
 }
 
 func GamesIndex(c *gin.Context) {
-	log.Debugf(msgEnter)
-	defer log.Debugf(msgExit)
-
 	if status := game.StatusFrom(c); status != game.NoStatus {
 		c.HTML(200, "shared/games_index", gin.H{})
 	} else {
@@ -282,8 +275,8 @@ func GamesIndex(c *gin.Context) {
 }
 
 func (client Client) Current(c *gin.Context) {
-	log.Debugf(msgEnter)
-	defer log.Debugf(msgExit)
+	client.Log.Debugf(msgEnter)
+	defer client.Log.Debugf(msgExit)
 
 	cu, err := client.User.Current(c)
 	if err != nil {

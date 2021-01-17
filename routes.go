@@ -4,6 +4,7 @@ import (
 	"cloud.google.com/go/datastore"
 	"github.com/SlothNinja/game"
 	"github.com/SlothNinja/log"
+	"github.com/SlothNinja/sn"
 	gtype "github.com/SlothNinja/type"
 	"github.com/SlothNinja/user"
 	stats "github.com/SlothNinja/user-stats"
@@ -12,75 +13,76 @@ import (
 )
 
 type Client struct {
+	*sn.Client
 	DS    *datastore.Client
-	User  user.Client
-	Stats stats.Client
-	Game  game.Client
+	User  *user.Client
+	Stats *stats.Client
+	Game  *game.Client
 }
 
-func NewClient(dsClient *datastore.Client, mcache *cache.Cache) Client {
-	log.Debugf(msgEnter)
-	defer log.Debugf(msgExit)
-	userClient := user.NewClient(dsClient, mcache)
-	return Client{
-		DS:    dsClient,
-		User:  userClient,
-		Stats: stats.NewClient(userClient, dsClient),
-		Game:  game.NewClient(userClient, dsClient),
+func NewClient(dsClient *datastore.Client, logger *log.Logger, mcache *cache.Cache, router *gin.Engine) *Client {
+	logger.Debugf(msgEnter)
+	defer logger.Debugf(msgExit)
+	userClient := user.NewClient(dsClient, logger, mcache)
+	cl := &Client{
+		Client: sn.NewClient(dsClient, logger, mcache, router),
+		User:   userClient,
+		Stats:  stats.NewClient(userClient, dsClient, logger, mcache),
+		Game:   game.NewClient(userClient, dsClient, logger, mcache, router, "game"),
 	}
+	cl.addRoutes()
+	return cl
 }
 
 func userFrom(c *gin.Context) (*user.User, error) {
 	return user.From(c), nil
 }
 
-func (client Client) AddRoutes(engine *gin.Engine) *gin.Engine {
-	log.Debugf(msgEnter)
-	defer log.Debugf(msgExit)
+func (cl *Client) addRoutes() {
+	cl.Log.Debugf(msgEnter)
+	defer cl.Log.Debugf(msgExit)
 
 	// New
-	engine.GET("new", client.NewAction)
+	cl.Router.GET("new", cl.NewAction)
 
 	// Create
-	engine.PUT("new", client.Create)
+	cl.Router.PUT("new", cl.Create)
 
 	// Update
-	engine.PUT("update/:uid", client.Update("uid"))
+	cl.Router.PUT("update/:uid", cl.Update("uid"))
 
 	// Get
-	engine.GET("json/:uid", client.JSON("uid"))
+	cl.Router.GET("json/:uid", cl.JSON("uid"))
 
 	// User Games
-	engine.POST("show/:uid/games/json",
-		client.Game.GetFiltered(gtype.All),
-		client.Game.JSONIndexAction,
+	cl.Router.POST("show/:uid/games/json",
+		cl.Game.GetFiltered(gtype.All),
+		cl.Game.JSONIndexAction,
 	)
 
-	engine.POST("edit/:uid/games/json",
+	cl.Router.POST("edit/:uid/games/json",
 		// user.RequireLogin(),
-		client.Game.GetFiltered(gtype.All),
-		client.Game.JSONIndexAction,
+		cl.Game.GetFiltered(gtype.All),
+		cl.Game.JSONIndexAction,
 	)
 
-	engine.GET("as/:uid", client.User.As)
+	cl.Router.GET("as/:uid", cl.User.As)
 
-	engine.GET("current", client.Current)
+	cl.Router.GET("current", cl.Current)
 
-	engine.GET("login", user.Login("auth"))
+	cl.Router.GET("login", user.Login("auth"))
 
-	engine.GET("logout", user.Logout)
+	cl.Router.GET("logout", user.Logout)
 
-	engine.GET("auth", client.User.Auth("auth"))
+	cl.Router.GET("auth", cl.User.Auth("auth"))
 
 	// Index
-	engine.GET("index", client.Index)
+	cl.Router.GET("index", cl.Index)
 
 	// // json data for Index
 	// g2.POST("/json",
 	// 	user.RequireAdmin,
-	// 	client.User.FetchAll,
-	// 	client.JSON,
+	// 	cl.User.FetchAll,
+	// 	cl.JSON,
 	// )
-
-	return engine
 }
