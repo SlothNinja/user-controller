@@ -14,7 +14,6 @@ import (
 
 type Client struct {
 	*sn.Client
-	DS    *datastore.Client
 	User  *user.Client
 	Stats *stats.Client
 	Game  *game.Client
@@ -23,7 +22,7 @@ type Client struct {
 func NewClient(dsClient *datastore.Client, logger *log.Logger, mcache *cache.Cache, router *gin.Engine) *Client {
 	logger.Debugf(msgEnter)
 	defer logger.Debugf(msgExit)
-	userClient := user.NewClient(dsClient, logger, mcache)
+	userClient := user.NewClient(logger, mcache)
 	cl := &Client{
 		Client: sn.NewClient(dsClient, logger, mcache, router),
 		User:   userClient,
