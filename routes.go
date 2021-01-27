@@ -7,16 +7,14 @@ import (
 	"github.com/SlothNinja/sn"
 	gtype "github.com/SlothNinja/type"
 	"github.com/SlothNinja/user"
-	stats "github.com/SlothNinja/user-stats"
 	"github.com/gin-gonic/gin"
 	"github.com/patrickmn/go-cache"
 )
 
 type Client struct {
 	*sn.Client
-	User  *user.Client
-	Stats *stats.Client
-	Game  *game.Client
+	User *user.Client
+	Game *game.Client
 }
 
 func NewClient(dsClient *datastore.Client, logger *log.Logger, mcache *cache.Cache, router *gin.Engine) *Client {
@@ -26,8 +24,7 @@ func NewClient(dsClient *datastore.Client, logger *log.Logger, mcache *cache.Cac
 	cl := &Client{
 		Client: sn.NewClient(dsClient, logger, mcache, router),
 		User:   userClient,
-		Stats:  stats.NewClient(userClient, dsClient, logger, mcache),
-		Game:   game.NewClient(userClient, dsClient, logger, mcache, router, "game"),
+		Game:   game.NewClient(dsClient, userClient, logger, mcache, router, "game"),
 	}
 	cl.addRoutes()
 	return cl
