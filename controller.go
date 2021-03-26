@@ -23,7 +23,7 @@ const (
 	msgExit     = "Exiting"
 )
 
-func (client Client) Index(c *gin.Context) {
+func (client *Client) Index(c *gin.Context) {
 	client.Log.Debugf(msgEnter)
 	defer client.Log.Debugf(msgExit)
 	cu, err := client.User.Current(c)
@@ -89,7 +89,7 @@ func toUserTable(c *gin.Context, us []*user.User) (*jUserIndex, error) {
 	return table, nil
 }
 
-func (client Client) JSON(uidParam string) gin.HandlerFunc {
+func (client *Client) JSON(uidParam string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		client.Log.Debugf(msgEnter)
 		defer client.Log.Debugf(msgExit)
@@ -110,7 +110,7 @@ func (client Client) JSON(uidParam string) gin.HandlerFunc {
 	}
 }
 
-func (client Client) NewAction(c *gin.Context) {
+func (client *Client) NewAction(c *gin.Context) {
 	client.Log.Debugf(msgEnter)
 	defer client.Log.Debugf(msgExit)
 
@@ -134,7 +134,7 @@ func (client Client) NewAction(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"user": cu})
 }
 
-func (client Client) Create(c *gin.Context) {
+func (client *Client) Create(c *gin.Context) {
 	client.Log.Debugf(msgEnter)
 	defer client.Log.Debugf(msgExit)
 
@@ -210,7 +210,7 @@ func (client Client) Create(c *gin.Context) {
 	})
 }
 
-func (client Client) Update(uidParam string) gin.HandlerFunc {
+func (client *Client) Update(uidParam string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		client.Log.Debugf(msgEnter)
 		defer client.Log.Debugf(msgExit)
@@ -274,7 +274,7 @@ func GamesIndex(c *gin.Context) {
 	}
 }
 
-func (client Client) Current(c *gin.Context) {
+func (client *Client) Current(c *gin.Context) {
 	client.Log.Debugf(msgEnter)
 	defer client.Log.Debugf(msgExit)
 

@@ -24,7 +24,7 @@ func NewClient(dsClient *datastore.Client, logger *log.Logger, mcache *cache.Cac
 	cl := &Client{
 		Client: sn.NewClient(dsClient, logger, mcache, router),
 		User:   userClient,
-		Game:   game.NewClient(dsClient, userClient, logger, mcache, router, "game"),
+		Game:   game.NewClient(dsClient, userClient, logger, mcache, router, "game", true),
 	}
 	cl.addRoutes()
 	return cl
