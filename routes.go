@@ -1,40 +1,32 @@
 package user_controller
 
 import (
-	"cloud.google.com/go/datastore"
-	"github.com/SlothNinja/game"
-	"github.com/SlothNinja/log"
 	"github.com/SlothNinja/sn"
-	gtype "github.com/SlothNinja/type"
 	"github.com/SlothNinja/user"
 	"github.com/gin-gonic/gin"
-	"github.com/patrickmn/go-cache"
 )
 
 type Client struct {
 	*sn.Client
 	User *user.Client
-	Game *game.Client
 }
 
-func NewClient(dsClient *datastore.Client, logger *log.Logger, mcache *cache.Cache, router *gin.Engine) *Client {
-	logger.Debugf(msgEnter)
-	defer logger.Debugf(msgExit)
-	userClient := user.NewClient(logger, mcache)
+func NewClient(snClient *sn.Client) *Client {
+	snClient.Log.Debugf(msgEnter)
+	defer snClient.Log.Debugf(msgExit)
+
 	cl := &Client{
-		Client: sn.NewClient(dsClient, logger, mcache, router),
-		User:   userClient,
-		Game:   game.NewClient(dsClient, userClient, logger, mcache, router, "game", true),
+		Client: snClient,
+		User:   user.NewClient(snClient),
 	}
-	cl.addRoutes()
-	return cl
+	return cl.addRoutes()
 }
 
 func userFrom(c *gin.Context) (*user.User, error) {
 	return user.From(c), nil
 }
 
-func (cl *Client) addRoutes() {
+func (cl *Client) addRoutes() *Client {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
@@ -50,17 +42,17 @@ func (cl *Client) addRoutes() {
 	// Get
 	cl.Router.GET("json/:uid", cl.JSON("uid"))
 
-	// User Games
-	cl.Router.POST("show/:uid/games/json",
-		cl.Game.GetFiltered(gtype.All),
-		cl.Game.JSONIndexAction,
-	)
+	// // User Games
+	// cl.Router.POST("show/:uid/games/json",
+	// 	cl.Game.GetFiltered(gtype.All),
+	// 	cl.Game.JSONIndexAction,
+	// )
 
-	cl.Router.POST("edit/:uid/games/json",
-		// user.RequireLogin(),
-		cl.Game.GetFiltered(gtype.All),
-		cl.Game.JSONIndexAction,
-	)
+	// cl.Router.POST("edit/:uid/games/json",
+	// 	// user.RequireLogin(),
+	// 	cl.Game.GetFiltered(gtype.All),
+	// 	cl.Game.JSONIndexAction,
+	// )
 
 	cl.Router.GET("as/:uid", cl.User.As)
 
@@ -75,10 +67,5 @@ func (cl *Client) addRoutes() {
 	// Index
 	cl.Router.GET("index", cl.Index)
 
-	// // json data for Index
-	// g2.POST("/json",
-	// 	user.RequireAdmin,
-	// 	cl.User.FetchAll,
-	// 	cl.JSON,
-	// )
+	return cl
 }
