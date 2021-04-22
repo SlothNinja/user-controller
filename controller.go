@@ -1,6 +1,7 @@
 package user_controller
 
 import (
+	"fmt"
 	"html/template"
 	"net/http"
 	"strconv"
@@ -94,9 +95,23 @@ func (client *Client) JSON(uidParam string) gin.HandlerFunc {
 		client.Log.Debugf(msgEnter)
 		defer client.Log.Debugf(msgExit)
 
+		cu, err := client.User.Current(c)
+		if err != nil {
+			sn.JErr(c, err)
+			return
+		}
+
 		uid, err := getUID(c, uidParam)
 		if err != nil {
 			sn.JErr(c, err)
+			return
+		}
+
+		if cu.ID() == uid {
+			c.JSON(http.StatusOK, gin.H{
+				"cu":   cu,
+				"user": cu,
+			})
 			return
 		}
 
@@ -106,7 +121,10 @@ func (client *Client) JSON(uidParam string) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{"user": u})
+		c.JSON(http.StatusOK, gin.H{
+			"cu":   cu,
+			"user": u,
+		})
 	}
 }
 
@@ -114,29 +132,48 @@ func (client *Client) NewAction(c *gin.Context) {
 	client.Log.Debugf(msgEnter)
 	defer client.Log.Debugf(msgExit)
 
+	cu, err := client.User.Current(c)
+	if err != user.ErrNotFound && !cu.Admin {
+		sn.JErr(c, fmt.Errorf("you already have an account"))
+		return
+	}
+
 	session := sessions.Default(c)
-	cu, err := user.NewFrom(session)
+	u, err := user.NewFrom(session)
 	if err != nil {
 		client.Log.Errorf(err.Error())
 		c.Redirect(http.StatusSeeOther, homePath)
 	}
 
-	cu.EmailReminders = true
-	cu.EmailNotifications = true
-	cu.GravType = "monsterid"
-	hash, err := user.EmailHash(cu.Email)
+	u.EmailReminders = true
+	u.EmailNotifications = true
+	u.GravType = "monsterid"
+	hash, err := user.EmailHash(u.Email)
 	if err != nil {
 		client.Log.Warningf("email hash error: %v", err)
 		c.Redirect(http.StatusSeeOther, homePath)
 	}
-	cu.EmailHash = hash
+	u.EmailHash = hash
 
-	c.JSON(http.StatusOK, gin.H{"user": cu})
+	if !cu.Admin {
+		cu = u
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"cu":   cu,
+		"user": u,
+	})
 }
 
 func (client *Client) Create(c *gin.Context) {
 	client.Log.Debugf(msgEnter)
 	defer client.Log.Debugf(msgExit)
+
+	cu, err := client.User.Current(c)
+	if err != user.ErrNotFound && !cu.Admin {
+		sn.JErr(c, fmt.Errorf("you already have an account"))
+		return
+	}
 
 	session := sessions.Default(c)
 	token, ok := user.SessionTokenFrom(session)
@@ -153,13 +190,12 @@ func (client *Client) Create(c *gin.Context) {
 	}
 
 	u := user.New(0)
-	err := c.ShouldBind(u)
+	err = c.ShouldBind(u)
 	if err != nil {
 		sn.JErr(c, err)
 		return
 	}
 
-	client.Log.Debugf("u: %#v", u)
 	err = client.User.Update(c, u, u, u)
 	if err != nil {
 		sn.JErr(c, err)
@@ -175,7 +211,6 @@ func (client *Client) Create(c *gin.Context) {
 
 	u.Key = ks[0]
 	u.LCName = strings.ToLower(u.Name)
-	client.Log.Debugf("u.Key: %#v", u.Key)
 
 	oaid := user.GenOAuthID(token.Sub)
 	oa := user.NewOAuth(oaid)
@@ -195,16 +230,21 @@ func (client *Client) Create(c *gin.Context) {
 		return
 	}
 
-	token.ID = u.Key.ID
+	if !cu.Admin {
+		cu = u
+		token.ID = u.Key.ID
 
-	err = token.SaveTo(session)
-	if err != nil {
-		client.Log.Errorf(err.Error())
-		c.Redirect(http.StatusSeeOther, homePath)
-		return
+		err = token.SaveTo(session)
+		if err != nil {
+			client.Log.Errorf(err.Error())
+			c.Redirect(http.StatusSeeOther, homePath)
+			return
+		}
+
 	}
 
 	c.JSON(http.StatusOK, gin.H{
+		"cu":      cu,
 		"user":    u,
 		"message": "account created for " + u.Name,
 	})
@@ -215,22 +255,25 @@ func (client *Client) Update(uidParam string) gin.HandlerFunc {
 		client.Log.Debugf(msgEnter)
 		defer client.Log.Debugf(msgExit)
 
+		cu, err := client.User.Current(c)
+		if err != nil {
+			sn.JErr(c, err)
+			return
+		}
+
 		uid, err := getUID(c, uidParam)
 		if err != nil {
 			sn.JErr(c, err)
 			return
 		}
 
-		u, err := client.User.Get(c, uid)
-		if err != nil {
-			sn.JErr(c, err)
-			return
-		}
-
-		cu, err := client.User.Current(c)
-		if err != nil {
-			sn.JErr(c, err)
-			return
+		u := cu
+		if cu.ID() != uid {
+			u, err = client.User.Get(c, uid)
+			if err != nil {
+				sn.JErr(c, err)
+				return
+			}
 		}
 
 		obj := user.New(0)
@@ -252,17 +295,23 @@ func (client *Client) Update(uidParam string) gin.HandlerFunc {
 			return
 		}
 
-		session := sessions.Default(c)
-		token, _ := user.SessionTokenFrom(session)
-		token.ID = u.Key.ID
+		if !cu.Admin {
+			cu = u
+			session := sessions.Default(c)
+			token, _ := user.SessionTokenFrom(session)
+			token.ID = u.Key.ID
 
-		err = token.SaveTo(session)
-		if err != nil {
-			sn.JErr(c, err)
-			return
+			err = token.SaveTo(session)
+			if err != nil {
+				sn.JErr(c, err)
+				return
+			}
 		}
 
-		c.JSON(http.StatusOK, gin.H{"user": u})
+		c.JSON(http.StatusOK, gin.H{
+			"cu":   cu,
+			"user": u,
+		})
 	}
 }
 
