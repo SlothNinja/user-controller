@@ -24,6 +24,10 @@ const (
 	msgExit     = "Exiting"
 )
 
+func isAdmin(u *user.User) bool {
+	return u != nil && u.Admin
+}
+
 func (client *Client) Index(c *gin.Context) {
 	client.Log.Debugf(msgEnter)
 	defer client.Log.Debugf(msgExit)
@@ -133,7 +137,7 @@ func (client *Client) NewAction(c *gin.Context) {
 	defer client.Log.Debugf(msgExit)
 
 	cu, err := client.User.Current(c)
-	if err != user.ErrNotFound && !cu.Admin {
+	if cu != nil {
 		sn.JErr(c, fmt.Errorf("you already have an account"))
 		return
 	}
@@ -155,7 +159,7 @@ func (client *Client) NewAction(c *gin.Context) {
 	}
 	u.EmailHash = hash
 
-	if !cu.Admin {
+	if !isAdmin(cu) {
 		cu = u
 	}
 
@@ -170,7 +174,7 @@ func (client *Client) Create(c *gin.Context) {
 	defer client.Log.Debugf(msgExit)
 
 	cu, err := client.User.Current(c)
-	if err != user.ErrNotFound && !cu.Admin {
+	if cu != nil {
 		sn.JErr(c, fmt.Errorf("you already have an account"))
 		return
 	}
@@ -230,7 +234,7 @@ func (client *Client) Create(c *gin.Context) {
 		return
 	}
 
-	if !cu.Admin {
+	if !isAdmin(cu) {
 		cu = u
 		token.ID = u.Key.ID
 
@@ -295,7 +299,7 @@ func (client *Client) Update(uidParam string) gin.HandlerFunc {
 			return
 		}
 
-		if !cu.Admin {
+		if !isAdmin(cu) {
 			cu = u
 			session := sessions.Default(c)
 			token, _ := user.SessionTokenFrom(session)
