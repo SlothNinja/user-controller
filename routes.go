@@ -1,17 +1,17 @@
 package user_controller
 
 import (
-	"github.com/SlothNinja/sn"
+	"github.com/SlothNinja/client"
 	"github.com/SlothNinja/user"
 	"github.com/gin-gonic/gin"
 )
 
 type Client struct {
-	*sn.Client
+	*client.Client
 	User *user.Client
 }
 
-func NewClient(snClient *sn.Client) *Client {
+func NewClient(snClient *client.Client) *Client {
 	snClient.Log.Debugf(msgEnter)
 	defer snClient.Log.Debugf(msgExit)
 
