@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"cloud.google.com/go/datastore"
-	"github.com/SlothNinja/game/v2"
 	"github.com/SlothNinja/sn/v2"
 	"github.com/SlothNinja/user"
 	"github.com/gin-contrib/sessions"
@@ -320,8 +319,8 @@ func (client *Client) Update(uidParam string) gin.HandlerFunc {
 }
 
 func GamesIndex(c *gin.Context) {
-	status := game.ToStatus(c.Param("status"))
-	if status != game.NoStatus {
+	status := sn.ToStatus[c.Param("status")]
+	if status != sn.NoStatus {
 		c.HTML(200, "shared/games_index", gin.H{})
 	} else {
 		c.HTML(200, "user/games_index", gin.H{})
